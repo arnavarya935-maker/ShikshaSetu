@@ -2,8 +2,12 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { type User } from '@supabase/supabase-js';
+import { type User as SupabaseUser } from '@supabase/supabase-js';
 import { createClient } from '../lib/supabase/client';
+
+// Compatibility shim: adds `uid` as an alias for Supabase's `id`
+// so all existing code using `user.uid` works without modification.
+export type User = SupabaseUser & { uid: string };
 
 export type ProfileRole = 'student' | 'teacher' | 'admin';
 
@@ -33,6 +37,12 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+// Helper: wrap a Supabase user with uid compatibility shim
+function toCompatUser(u: SupabaseUser | null): User | null {
+  if (!u) return null;
+  return { ...u, uid: u.id };
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -73,9 +83,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initializeAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (mounted) {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          const loadedProfile = await loadUserProfile(session.user);
+        const compatUser = toCompatUser(session?.user ?? null);
+        setUser(compatUser);
+        if (compatUser) {
+          const loadedProfile = await loadUserProfile(compatUser);
           setProfile(loadedProfile);
         }
         setLoading(false);
@@ -87,9 +98,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         if (!mounted) return;
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          const loadedProfile = await loadUserProfile(session.user);
+        const compatUser = toCompatUser(session?.user ?? null);
+        setUser(compatUser);
+        if (compatUser) {
+          const loadedProfile = await loadUserProfile(compatUser);
           setProfile(loadedProfile);
         } else {
           setProfile(null);
@@ -113,10 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       onboardingComplete: true,
     };
 
-    const { error } = await supabase
-      .from('users')
-      .upsert(profileToSave);
-
+    const { error } = await supabase.from('users').upsert(profileToSave);
     if (error) throw error;
 
     if (profileInput.name && user.user_metadata?.full_name !== profileInput.name) {
@@ -134,14 +143,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       options: { data: { full_name: name } }
     });
     if (error) throw error;
-    setUser(data.user);
+    setUser(toCompatUser(data.user));
     router.push('/dashboard');
   };
 
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
-    setUser(data.user);
+    setUser(toCompatUser(data.user));
     router.push('/dashboard');
   };
 
