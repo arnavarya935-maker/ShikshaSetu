@@ -1,0 +1,188 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #ffffff;
+  color: #09090b;
+}
+
+html.dark {
+  color-scheme: dark;
+  background-color: #09090b;
+  color: #f4f4f5;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background-color: #ffffff;
+  color: #09090b;
+}
+
+html.dark body {
+  background-color: #09090b;
+  color: #f4f4f5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(9, 9, 11, 0.9);
+  color: #ffffff;
+}
+
+html.dark ::selection {
+  background: rgba(255, 255, 255, 0.9);
+  color: #09090b;
+}
+
+/* Flashcard 3D flip helper classes */
+.perspective {
+  perspective: 1000px;
+}
+
+.transform-style {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* ── Light Mode / Dark Mode Container & Color Adaptations ─────── */
+/* In Light Mode: Replace dark grey box layouts with very light soft pink `#FDF4F8` / `#FAF0F6` */
+html:not(.dark) .bg-slate-950,
+html:not(.dark) .bg-slate-900,
+html:not(.dark) .bg-slate-850,
+html:not(.dark) .bg-slate-800,
+html:not(.dark) .bg-zinc-800,
+html:not(.dark) .bg-zinc-900 {
+  background-color: #FDF4F8 !important;
+  color: #18181b !important;
+}
+
+html:not(.dark) .border-slate-800,
+html:not(.dark) .border-slate-700,
+html:not(.dark) .border-zinc-800 {
+  border-color: #FBCFE8 !important;
+}
+
+/* ── Global Enterprise Button System Overrides ─────── */
+/* Primary buttons: #171717 in light mode, white in dark mode with rounded-lg (6-8px radius) */
+.btn-primary,
+.bg-violet-500,
+.bg-violet-600,
+.bg-purple-600,
+.bg-indigo-600,
+.bg-violet-700 {
+  background-color: #171717 !important;
+  color: #ffffff !important;
+  border-radius: 0.5rem !important; /* 8px radius */
+  border-color: transparent !important;
+  box-shadow: none !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease !important;
+}
+
+.btn-primary:hover,
+.bg-violet-500:hover,
+.bg-violet-600:hover,
+.bg-purple-600:hover,
+.bg-indigo-600:hover,
+.bg-violet-700:hover {
+  background-color: #262626 !important;
+}
+
+html.dark .btn-primary,
+html.dark .bg-violet-500,
+html.dark .bg-violet-600,
+html.dark .bg-purple-600,
+html.dark .bg-indigo-600,
+html.dark .bg-violet-700 {
+  background-color: #ffffff !important;
+  color: #171717 !important;
+}
+
+html.dark .btn-primary:hover,
+html.dark .bg-violet-500:hover,
+html.dark .bg-violet-600:hover,
+html.dark .bg-purple-600:hover,
+html.dark .bg-indigo-600:hover,
+html.dark .bg-violet-700:hover {
+  background-color: #f4f4f5 !important;
+}
+
+/* Secondary buttons: White background with #DCDCDC border */
+.btn-secondary {
+  background-color: #ffffff !important;
+  color: #171717 !important;
+  border: 1px solid #DCDCDC !important;
+  border-radius: 0.5rem !important;
+  box-shadow: none !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease !important;
+}
+
+.btn-secondary:hover {
+  background-color: #f4f4f5 !important;
+}
+
+html.dark .btn-secondary {
+  background-color: #18181b !important;
+  color: #f4f4f5 !important;
+  border-color: #27272a !important;
+}
+
+html.dark .btn-secondary:hover {
+  background-color: #27272a !important;
+}
+
+/* Destructive buttons: Restrained red #C43D3D */
+.btn-destructive,
+.bg-rose-600,
+.bg-red-600 {
+  background-color: #C43D3D !important;
+  color: #ffffff !important;
+  border-radius: 0.5rem !important;
+  box-shadow: none !important;
+}
+
+.btn-destructive:hover,
+.bg-rose-600:hover,
+.bg-red-600:hover {
+  background-color: #B23333 !important;
+}
+
+/* Success state buttons: Muted green #2F7D5A */
+.btn-success,
+.bg-emerald-600 {
+  background-color: #2F7D5A !important;
+  color: #ffffff !important;
+  border-radius: 0.5rem !important;
+  box-shadow: none !important;
+}
+
+.btn-success:hover,
+.bg-emerald-600:hover {
+  background-color: #27684B !important;
+}

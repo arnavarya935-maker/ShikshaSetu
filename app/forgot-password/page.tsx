@@ -1,0 +1,28 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import AuthForm from '../../components/AuthForm';
+import AuthPageShell from '../../components/AuthPageShell';
+import { useAuth } from '../../components/AuthProvider';
+
+export default function ForgotPasswordPage() {
+  const { user, profile, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user) {
+      if (profile && !profile.onboardingComplete) {
+        router.replace('/onboarding');
+      } else {
+        router.replace('/dashboard');
+      }
+    }
+  }, [loading, profile, router, user]);
+
+  return (
+    <AuthPageShell accentTitle="Recover access" title="Reset your password" description="Enter your email and we will send you a secure link to get back into your account.">
+      <AuthForm mode="forgot" />
+    </AuthPageShell>
+  );
+}

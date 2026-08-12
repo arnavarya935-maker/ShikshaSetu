@@ -1,0 +1,94 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check auth state
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper to check user record ownership
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Helper to get user profile roles
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == 'admin';
+    }
+
+    function isTeacher() {
+      return isAuthenticated() && getUserRole() == 'teacher';
+    }
+
+    // 1. Users profiles rules
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
+
+    // 2. Enrollments rules
+    match /enrollments/{enrollmentId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isTeacher() || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isTeacher() || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // 3. Courses catalog rules
+    match /courses/{courseId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && (isTeacher() || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // 4. Notes rules
+    match /notes/{noteId} {
+      allow read, write: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // 5. Bookmarks rules
+    match /bookmarks/{bookmarkId} {
+      allow read, write: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // 6. Submissions rules
+    match /submissions/{submissionId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isTeacher() || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && (isTeacher() || isAdmin());
+    }
+
+    // 7. Announcements rules
+    match /announcements/{announcementId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (isTeacher() || isAdmin());
+    }
+
+    // 8. Support tickets / Platform issues rules
+    match /platformIssues/{issueId} {
+      allow read, write: if isAdmin();
+      allow create: if isAuthenticated();
+    }
+
+    // 9. Notifications rules
+    match /notifications/{notificationId} {
+      allow read, update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // 10. Certificates rules
+    match /certificates/{certId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+  }
+}

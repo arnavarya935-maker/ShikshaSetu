@@ -1,0 +1,18 @@
+{
+  "name": "ShikshaSetu",
+  "short_name": "ShikshaSetu",
+  "description": "A premium educational platform for learners and educators.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#8b5cf6",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
+
