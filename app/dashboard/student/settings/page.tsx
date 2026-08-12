@@ -6,8 +6,7 @@ import DashboardShell from '../../../../components/DashboardShell';
 import DashboardCard from '../../../../components/DashboardCard';
 import { useAuth } from '../../../../components/AuthProvider';
 import { useLanguage } from '../../../../lib/language/LanguageContext';
-import { doc, setDoc } from 'firebase/firestore';
-import { getFirebaseFirestore } from '../../../../lib/firebase';
+import { createClient } from '../../../../lib/supabase/client';
 import { Bell, Globe, Shield, Loader2, Sparkles } from 'lucide-react';
 
 type SettingsState = {
@@ -48,14 +47,17 @@ export default function StudentSettingsPage() {
     setSaving(true);
     setToast(null);
 
-    const db = getFirebaseFirestore();
-    if (db) {
       try {
-        const userRef = doc(db, 'users', user.uid);
-        await setDoc(userRef, {
-          settings,
-          onboardingComplete: true,
-        }, { merge: true });
+        const supabase = createClient();
+        const { error } = await supabase
+          .from('users')
+          .update({
+            settings,
+            onboardingComplete: true,
+          })
+          .eq('id', user.id);
+          
+        if (error) throw error;
 
         setToast('✅ Settings saved successfully!');
         setTimeout(() => setToast(null), 2500);
@@ -65,10 +67,6 @@ export default function StudentSettingsPage() {
       } finally {
         setSaving(false);
       }
-    } else {
-      setToast('❌ Database connection error.');
-      setSaving(false);
-    }
   };
 
   return (

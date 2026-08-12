@@ -8,8 +8,7 @@ import LmsSkeletonLoader from '../../../../components/lms/LmsSkeletonLoader';
 import { useAuth } from '../../../../components/AuthProvider';
 import { useEnrollments } from '../../../../lib/lms/hooks';
 import { courses } from '../../../../lib/lms/data/courses';
-import { getFirebaseFirestore } from '../../../../lib/firebase';
-import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
+import { createClient } from '../../../../lib/supabase/client';
 import { Calendar, CheckCircle2, AlertCircle, FileText, Loader2, Sparkles } from 'lucide-react';
 
 type Submission = {
@@ -39,16 +38,15 @@ export default function AssignmentsPage() {
       setSubsLoading(false);
       return;
     }
-    const db = getFirebaseFirestore();
-    if (!db) {
-      setSubsLoading(false);
-      return;
-    }
     try {
-      const q = query(collection(db, 'submissions'), where('userId', '==', user.uid));
-      const snap = await getDocs(q);
-      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Submission);
-      setSubmissions(list);
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('submissions')
+        .select('*')
+        .eq('userId', user.id);
+        
+      if (error) throw error;
+      setSubmissions((data as Submission[]) || []);
     } catch (e) {
       console.error('Failed to load submissions:', e);
     } finally {
@@ -110,19 +108,19 @@ export default function AssignmentsPage() {
     setSubmittingId(assignmentId);
     setToast(null);
 
-    const db = getFirebaseFirestore();
-    if (db) {
       try {
+        const supabase = createClient();
         const id = `sub-${Date.now()}`;
         const newSubmission: Submission = {
           id,
           assignmentId,
-          userId: user.uid,
+          userId: user.id,
           content: submissionText,
           submittedAt: new Date().toISOString(),
         };
 
-        await setDoc(doc(db, 'submissions', id), newSubmission);
+        const { error } = await supabase.from('submissions').insert(newSubmission);
+        if (error) throw error;
         setToast('✅ Assignment submitted successfully!');
         setSubmissionText('');
         
@@ -134,10 +132,6 @@ export default function AssignmentsPage() {
       } finally {
         setSubmittingId(null);
       }
-    } else {
-      setToast('❌ Database connection error.');
-      setSubmittingId(null);
-    }
   };
 
   return (

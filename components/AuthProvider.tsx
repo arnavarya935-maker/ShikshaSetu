@@ -2,25 +2,8 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  sendEmailVerification,
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  signOut as firebaseSignOut,
-  updateProfile,
-  setPersistence,
-  browserLocalPersistence,
-  type User,
-} from 'firebase/auth';
-import {
-  doc,
-  getDoc,
-  setDoc,
-} from 'firebase/firestore';
-import { getFirebaseAuth, getFirebaseFirestore, googleProvider, isFirebaseConfigured } from '../lib/firebase';
+import { type User } from '@supabase/supabase-js';
+import { createClient } from '../lib/supabase/client';
 
 export type ProfileRole = 'student' | 'teacher' | 'admin';
 
@@ -56,29 +39,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const supabase = createClient();
 
   const loadUserProfile = async (currentUser: User | null) => {
-    if (!currentUser) {
-      return null;
-    }
-
-    const firestore = getFirebaseFirestore();
-    if (!firestore) {
-      return null;
-    }
-
-    const profileRef = doc(firestore, 'users', currentUser.uid);
+    if (!currentUser) return null;
 
     try {
-      const profileSnapshot = await getDoc(profileRef);
-      if (!profileSnapshot.exists()) {
-        return null;
-      }
+      const { data: profileData, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', currentUser.id)
+        .single();
 
-      const profileData = profileSnapshot.data() as Partial<UserProfile>;
+      if (error || !profileData) return null;
 
       return {
-        name: profileData.name ?? currentUser.displayName ?? '',
+        name: profileData.name ?? currentUser.user_metadata?.full_name ?? '',
         institute: profileData.institute ?? '',
         role: (profileData.role as ProfileRole) ?? 'student',
         onboardingComplete: Boolean(profileData.onboardingComplete),
@@ -92,147 +68,100 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    const auth = getFirebaseAuth();
-
-    if (!auth || !isFirebaseConfigured()) {
-      setLoading(false);
-      return;
-    }
-
-    let unsubscribe: (() => void) | undefined;
     let mounted = true;
 
-    const handleAuthStateChanged = async (currentUser: User | null) => {
-      if (!mounted) {
-        return;
-      }
-
-      setUser(currentUser);
-      if (!currentUser) {
-        setProfile(null);
+    const initializeAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (mounted) {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          const loadedProfile = await loadUserProfile(session.user);
+          setProfile(loadedProfile);
+        }
         setLoading(false);
-        return;
       }
-
-      const loadedProfile = await loadUserProfile(currentUser);
-      if (!mounted) {
-        return;
-      }
-
-      setProfile(loadedProfile);
-      setLoading(false);
     };
 
-    (async () => {
-      try {
-        await setPersistence(auth, browserLocalPersistence);
-      } catch (e) {
-        // ignore persistence errors; we'll still listen for auth state
-      }
+    initializeAuth();
 
-      if (!mounted) return;
-      unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-        void handleAuthStateChanged(currentUser);
-      });
-    })();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (!mounted) return;
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          const loadedProfile = await loadUserProfile(session.user);
+          setProfile(loadedProfile);
+        } else {
+          setProfile(null);
+        }
+        setLoading(false);
+      }
+    );
 
     return () => {
       mounted = false;
-      if (unsubscribe) unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
   const completeOnboarding = async (profileInput: OnboardingProfileInput) => {
-    const auth = getFirebaseAuth();
-    if (!auth || !user) {
-      throw new Error('A signed-in user is required to complete onboarding.');
-    }
+    if (!user) throw new Error('A signed-in user is required.');
 
-    const firestore = getFirebaseFirestore();
-    if (!firestore) {
-      throw new Error('Firestore is not configured.');
-    }
-
-    const profileRef = doc(firestore, 'users', user.uid);
-    const profileToSave: UserProfile = {
+    const profileToSave = {
       ...profileInput,
+      id: user.id,
       onboardingComplete: true,
     };
 
-    await setDoc(profileRef, profileToSave, { merge: true });
+    const { error } = await supabase
+      .from('users')
+      .upsert(profileToSave);
 
-    if (profileInput.name && user.displayName !== profileInput.name) {
-      await updateProfile(user, { displayName: profileInput.name });
+    if (error) throw error;
+
+    if (profileInput.name && user.user_metadata?.full_name !== profileInput.name) {
+      await supabase.auth.updateUser({ data: { full_name: profileInput.name } });
     }
 
-    setProfile(profileToSave);
+    setProfile(profileToSave as UserProfile);
     router.replace('/dashboard');
   };
 
   const signUp = async (email: string, password: string, name: string) => {
-    const auth = getFirebaseAuth();
-    if (!auth) {
-      throw new Error('Firebase authentication is not configured yet.');
-    }
-
-    const { user: createdUser } = await createUserWithEmailAndPassword(auth, email, password);
-    if (name) {
-      await updateProfile(createdUser, { displayName: name });
-    }
-    await sendEmailVerification(createdUser);
-
-    setUser(createdUser);
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: name } }
+    });
+    if (error) throw error;
+    setUser(data.user);
     router.push('/dashboard');
   };
 
   const signIn = async (email: string, password: string) => {
-    const auth = getFirebaseAuth();
-    if (!auth) {
-      throw new Error('Firebase authentication is not configured yet.');
-    }
-
-    const { user: signedInUser } = await signInWithEmailAndPassword(auth, email, password);
-    if (!signedInUser.emailVerified) {
-      await sendEmailVerification(signedInUser);
-    }
-
-    setUser(signedInUser);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    setUser(data.user);
     router.push('/dashboard');
   };
 
   const signInWithGoogle = async () => {
-    const auth = getFirebaseAuth();
-    if (!auth) {
-      throw new Error('Firebase authentication is not configured yet.');
-    }
-
-    const result = await signInWithPopup(auth, googleProvider);
-    setUser(result.user);
-    router.push('/dashboard');
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+    if (error) throw error;
   };
 
   const resetPassword = async (email: string) => {
-    const auth = getFirebaseAuth();
-    if (!auth) {
-      throw new Error('Firebase authentication is not configured yet.');
-    }
-
-    await sendPasswordResetEmail(auth, email);
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) throw error;
   };
 
   const sendVerificationEmail = async () => {
-    if (!user) {
-      throw new Error('No signed-in user available.');
-    }
-
-    await sendEmailVerification(user);
+    if (!user?.email) throw new Error('No user email.');
+    await supabase.auth.resend({ type: 'signup', email: user.email });
   };
 
   const logout = async () => {
-    const auth = getFirebaseAuth();
-    if (auth) {
-      await firebaseSignOut(auth);
-    }
+    await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
     router.replace('/login');
@@ -242,7 +171,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     profile,
     loading,
-    isConfigured: isFirebaseConfigured(),
+    isConfigured: true,
     signUp,
     signIn,
     signInWithGoogle,
@@ -260,6 +189,5 @@ export function useAuth() {
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-
   return context;
 }

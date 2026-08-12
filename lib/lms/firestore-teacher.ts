@@ -1,17 +1,4 @@
-import {
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-  arrayUnion,
-  serverTimestamp,
-} from 'firebase/firestore';
-import { getFirebaseFirestore } from '../firebase';
+import { createClient } from '../supabase/client';
 import type { Course, Enrollment, Module } from './types';
 import { courses as initialCourses } from './data/courses';
 import { mockEnrollments } from './data/enrollments';
@@ -19,10 +6,10 @@ import { mockSubmissions, type TeacherSubmission } from './data/submissions';
 import { mockAnnouncements, type Announcement } from './data/announcements';
 
 function getDb() {
-  return getFirebaseFirestore();
+  return createClient();
 }
 
-// Stateful local copy to support additions/deletions in memory when offline or Firestore not configured
+// Stateful local copy to support additions/deletions in memory when offline or Supabase not configured
 let localCourses = [...initialCourses];
 let localSubmissions = [...mockSubmissions];
 let localAnnouncements = [...mockAnnouncements];
@@ -30,16 +17,16 @@ let localAnnouncements = [...mockAnnouncements];
 /* ── Course Management ────────────────────────────────────── */
 
 export async function getTeacherCourses(userId: string): Promise<Course[]> {
-  const db = getDb();
-  if (!db) {
-    return localCourses;
-  }
-
   try {
-    const q = query(collection(db, 'courses'), where('teacherId', '==', userId));
-    const snap = await getDocs(q);
-    const dbCourses = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Course);
+    const supabase = getDb();
+    const { data, error } = await supabase
+      .from('courses')
+      .select('*')
+      .eq('teacherId', userId);
 
+    if (error || !data?.length) return localCourses;
+
+    const dbCourses = data as Course[];
     const merged = [...dbCourses];
     for (const localCourse of localCourses) {
       if (!merged.some((c) => c.id === localCourse.id)) {
@@ -86,25 +73,21 @@ export async function createCourse(userId: string, courseInput: Partial<Course>)
     createdAt: now,
     whatYoullLearn: courseInput.whatYoullLearn ?? [],
     requirements: courseInput.requirements ?? [],
-    ...((courseInput as any).teacherId ? {} : { teacherId: userId }), // associate with logged-in user
+    ...((courseInput as any).teacherId ? {} : { teacherId: userId }),
   } as unknown as Course;
 
-  const db = getDb();
-  if (db) {
-    try {
-      await setDoc(doc(db, 'courses', courseId), newCourse);
-    } catch (e) {
-      console.error('Failed to create course in Firestore:', e);
-    }
+  try {
+    const supabase = getDb();
+    await supabase.from('courses').insert(newCourse);
+  } catch (e) {
+    console.error('Failed to create course in Supabase:', e);
   }
 
-  // Update local memory list
   localCourses.push(newCourse);
   return newCourse;
 }
 
 export async function updateCourse(courseId: string, courseInput: Partial<Course>): Promise<Course | null> {
-  const db = getDb();
   const index = localCourses.findIndex((c) => c.id === courseId);
   if (index === -1) return null;
 
@@ -113,7 +96,6 @@ export async function updateCourse(courseId: string, courseInput: Partial<Course
     ...courseInput,
   };
 
-  // Recalculate duration based on curriculum lessons
   if (courseInput.curriculum) {
     updatedCourse.duration = courseInput.curriculum.reduce(
       (sum, m) => sum + m.lessons.reduce((lSum, l) => lSum + l.duration, 0),
@@ -121,12 +103,11 @@ export async function updateCourse(courseId: string, courseInput: Partial<Course
     );
   }
 
-  if (db) {
-    try {
-      await setDoc(doc(db, 'courses', courseId), updatedCourse, { merge: true });
-    } catch (e) {
-      console.error('Failed to update course in Firestore:', e);
-    }
+  try {
+    const supabase = getDb();
+    await supabase.from('courses').upsert(updatedCourse);
+  } catch (e) {
+    console.error('Failed to update course in Supabase:', e);
   }
 
   localCourses[index] = updatedCourse;
@@ -134,13 +115,11 @@ export async function updateCourse(courseId: string, courseInput: Partial<Course
 }
 
 export async function deleteCourse(courseId: string): Promise<void> {
-  const db = getDb();
-  if (db) {
-    try {
-      await deleteDoc(doc(db, 'courses', courseId));
-    } catch (e) {
-      console.error('Failed to delete course in Firestore:', e);
-    }
+  try {
+    const supabase = getDb();
+    await supabase.from('courses').delete().eq('id', courseId);
+  } catch (e) {
+    console.error('Failed to delete course in Supabase:', e);
   }
 
   localCourses = localCourses.filter((c) => c.id !== courseId);
@@ -167,27 +146,24 @@ export type StudentProgress = {
 };
 
 export async function getCourseStudents(courseId: string): Promise<StudentProgress[]> {
-  const db = getDb();
   const course = localCourses.find((c) => c.id === courseId);
   if (!course) return [];
 
   const totalLessons = course.curriculum.reduce((sum, m) => sum + m.lessons.length, 0);
 
-  if (!db) {
-    // Filter mock enrollments
-    const enrolls = mockEnrollments.filter((e) => e.courseId === courseId);
-    return enrolls.map((e) => {
-      // Map names based on student ID in enrollments
-      let studentName = 'Student Learner';
-      let studentEmail = 'student@example.com';
-      if (e.userId === 'mock-user') {
-        studentName = 'Aarav Mehta';
-        studentEmail = 'aarav.mehta@example.com';
-      }
-      return {
+  try {
+    const supabase = getDb();
+    const { data: enrollments, error } = await supabase
+      .from('enrollments')
+      .select('*')
+      .eq('courseId', courseId);
+
+    if (error || !enrollments?.length) {
+      const enrolls = mockEnrollments.filter((e) => e.courseId === courseId);
+      return enrolls.map((e) => ({
         userId: e.userId,
-        studentName,
-        studentEmail,
+        studentName: e.userId === 'mock-user' ? 'Aarav Mehta' : 'Student Learner',
+        studentEmail: e.userId === 'mock-user' ? 'aarav.mehta@example.com' : 'student@example.com',
         courseId: e.courseId,
         courseTitle: course.title,
         progress: e.progress,
@@ -196,26 +172,22 @@ export async function getCourseStudents(courseId: string): Promise<StudentProgre
         enrolledAt: e.enrolledAt,
         lastAccessedAt: e.lastAccessedAt,
         certificateEarned: e.certificateEarned,
-      };
-    });
-  }
+      }));
+    }
 
-  try {
-    const q = query(collection(db, 'enrollments'), where('courseId', '==', courseId));
-    const snap = await getDocs(q);
     const list: StudentProgress[] = [];
-
-    for (const d of snap.docs) {
-      const e = d.data() as Enrollment;
-      // Fetch user detail for profile info
+    for (const e of enrollments as Enrollment[]) {
       let studentName = 'Student Learner';
       let studentEmail = 'student@example.com';
       try {
-        const userDoc = await getDoc(doc(db, 'users', e.userId));
-        if (userDoc.exists()) {
-          const u = userDoc.data();
-          studentName = u.name ?? studentName;
-          studentEmail = u.email ?? studentEmail;
+        const { data: userDoc } = await supabase
+          .from('users')
+          .select('name, email')
+          .eq('id', e.userId)
+          .single();
+        if (userDoc) {
+          studentName = userDoc.name ?? studentName;
+          studentEmail = userDoc.email ?? studentEmail;
         }
       } catch {}
 
@@ -242,47 +214,43 @@ export async function getCourseStudents(courseId: string): Promise<StudentProgre
 /* ── Assignment Grading ───────────────────────────────────── */
 
 export async function getCourseSubmissions(courseId?: string): Promise<TeacherSubmission[]> {
-  const db = getDb();
   let dbSubmissions: TeacherSubmission[] = [];
 
-  if (db) {
-    try {
-      const collRef = collection(db, 'submissions');
-      const q = courseId
-        ? query(collRef, where('courseId', '==', courseId))
-        : collRef;
-      const snap = await getDocs(q);
+  try {
+    const supabase = getDb();
+    let query = supabase.from('submissions').select('*');
+    if (courseId) query = query.eq('courseId', courseId);
+    const { data } = await query;
 
-      for (const d of snap.docs) {
-        const data = d.data();
-        const s = data as TeacherSubmission;
-        
-        // Load course & student details
+    if (data?.length) {
+      for (const s of data as TeacherSubmission[]) {
         const c = localCourses.find((course) => course.id === s.courseId);
         let studentName = s.studentName ?? 'Learner';
         let studentEmail = s.studentEmail ?? '';
 
         try {
-          const userDoc = await getDoc(doc(db, 'users', s.userId));
-          if (userDoc.exists()) {
-            const u = userDoc.data();
-            studentName = u.name ?? studentName;
-            studentEmail = u.email ?? studentEmail;
+          const { data: userDoc } = await supabase
+            .from('users')
+            .select('name, email')
+            .eq('id', s.userId)
+            .single();
+          if (userDoc) {
+            studentName = userDoc.name ?? studentName;
+            studentEmail = userDoc.email ?? studentEmail;
           }
         } catch {}
 
         dbSubmissions.push({
           ...s,
-          id: d.id,
           courseTitle: c?.title ?? 'Course',
           studentName,
           studentEmail,
           status: s.score !== undefined ? 'graded' : 'ungraded',
         });
       }
-    } catch (e) {
-      console.error('Failed to load submissions from Firestore:', e);
     }
+  } catch (e) {
+    console.error('Failed to load submissions from Supabase:', e);
   }
 
   const merged = [...dbSubmissions];
@@ -303,7 +271,6 @@ export async function gradeSubmission(
   score: number,
   feedback: string
 ): Promise<TeacherSubmission | null> {
-  const db = getDb();
   const idx = localSubmissions.findIndex((s) => s.id === submissionId);
   if (idx === -1) return null;
 
@@ -314,15 +281,14 @@ export async function gradeSubmission(
     status: 'graded',
   };
 
-  if (db) {
-    try {
-      await updateDoc(doc(db, 'submissions', submissionId), {
-        score,
-        feedback,
-      });
-    } catch (e) {
-      console.error('Failed to grade submission in Firestore:', e);
-    }
+  try {
+    const supabase = getDb();
+    await supabase
+      .from('submissions')
+      .update({ score, feedback })
+      .eq('id', submissionId);
+  } catch (e) {
+    console.error('Failed to grade submission in Supabase:', e);
   }
 
   localSubmissions[idx] = updated;
@@ -332,15 +298,15 @@ export async function gradeSubmission(
 /* ── Announcements ────────────────────────────────────────── */
 
 export async function getCourseAnnouncements(courseId: string): Promise<Announcement[]> {
-  const db = getDb();
-  if (!db) {
-    return localAnnouncements.filter((a) => a.courseId === courseId);
-  }
-
   try {
-    const q = query(collection(db, 'announcements'), where('courseId', '==', courseId));
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Announcement);
+    const supabase = getDb();
+    const { data, error } = await supabase
+      .from('announcements')
+      .select('*')
+      .eq('courseId', courseId);
+
+    if (error || !data?.length) return localAnnouncements.filter((a) => a.courseId === courseId);
+    return data as Announcement[];
   } catch {
     return localAnnouncements.filter((a) => a.courseId === courseId);
   }
@@ -360,31 +326,30 @@ export async function createAnnouncement(courseId: string, title: string, messag
     createdAt: now,
   };
 
-  const db = getDb();
-  if (db) {
-    try {
-      await setDoc(doc(db, 'announcements', annId), newAnn);
-      
-      // Also send a general notification to all enrolled users of this course
-      const enrollsQuery = query(collection(db, 'enrollments'), where('courseId', '==', courseId));
-      const enrollsSnap = await getDocs(enrollsQuery);
-      for (const edoc of enrollsSnap.docs) {
-        const e = edoc.data() as Enrollment;
-        const notifId = `notif-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        await setDoc(doc(db, 'notifications', notifId), {
-          id: notifId,
-          userId: e.userId,
-          type: 'general',
-          title: `Announcement: ${title}`,
-          message: `Announcement in "${course?.title}": ${message.substring(0, 100)}...`,
-          read: false,
-          createdAt: now,
-          linkUrl: `/learn/${courseId}`,
-        });
-      }
-    } catch (e) {
-      console.error('Failed to create announcement or notifications:', e);
+  try {
+    const supabase = getDb();
+    await supabase.from('announcements').insert(newAnn);
+
+    const { data: enrollments } = await supabase
+      .from('enrollments')
+      .select('userId')
+      .eq('courseId', courseId);
+
+    if (enrollments?.length) {
+      const notifications = enrollments.map((e: any) => ({
+        id: `notif-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        userId: e.userId,
+        type: 'general',
+        title: `Announcement: ${title}`,
+        message: `Announcement in "${course?.title}": ${message.substring(0, 100)}...`,
+        read: false,
+        createdAt: now,
+        linkUrl: `/learn/${courseId}`,
+      }));
+      await supabase.from('notifications').insert(notifications);
     }
+  } catch (e) {
+    console.error('Failed to create announcement in Supabase:', e);
   }
 
   localAnnouncements.unshift(newAnn);

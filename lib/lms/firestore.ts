@@ -1,17 +1,4 @@
-import {
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-  arrayUnion,
-  serverTimestamp,
-} from 'firebase/firestore';
-import { getFirebaseFirestore } from '../firebase';
+import { createClient } from '../supabase/client';
 import type {
   Enrollment,
   Note,
@@ -33,26 +20,29 @@ import {
 } from './data/enrollments';
 
 /* ────────────────────────────────────────────────────────────
-   Firestore helpers — gracefully fall back to mock data
-   when Firestore is unavailable (missing config / offline).
+   Supabase helpers — gracefully fall back to mock data
+   when Supabase is unavailable (missing config / offline).
    ──────────────────────────────────────────────────────────── */
 
 function getDb() {
-  return getFirebaseFirestore();
+  return createClient();
 }
 
 /* ── Enrollments ──────────────────────────────────────────── */
 
 export async function getEnrollments(userId: string): Promise<Enrollment[]> {
-  const db = getDb();
-  if (!db) return mockEnrollments.filter((e) => e.userId === userId || e.userId === 'mock-user');
-
   try {
-    const q = query(collection(db, 'enrollments'), where('userId', '==', userId));
-    const snap = await getDocs(q);
-    const dbEnrolls = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Enrollment);
+    const supabase = getDb();
+    const { data, error } = await supabase
+      .from('enrollments')
+      .select('*')
+      .eq('userId', userId);
 
-    const merged = [...dbEnrolls];
+    if (error || !data?.length) {
+      return mockEnrollments.filter((e) => e.userId === userId || e.userId === 'mock-user');
+    }
+
+    const merged = [...data as Enrollment[]];
     for (const mockEnroll of mockEnrollments) {
       if (mockEnroll.userId === 'mock-user' && !merged.some((e) => e.courseId === mockEnroll.courseId)) {
         merged.push(mockEnroll);
@@ -65,14 +55,19 @@ export async function getEnrollments(userId: string): Promise<Enrollment[]> {
 }
 
 export async function getEnrollment(userId: string, courseId: string): Promise<Enrollment | null> {
-  const db = getDb();
-  if (!db) return mockEnrollments.find((e) => (e.userId === userId || e.userId === 'mock-user') && e.courseId === courseId) ?? null;
-
   try {
+    const supabase = getDb();
     const docId = `${userId}_${courseId}`;
-    const snap = await getDoc(doc(db, 'enrollments', docId));
-    if (!snap.exists()) return mockEnrollments.find((e) => e.userId === 'mock-user' && e.courseId === courseId) ?? null;
-    return { id: snap.id, ...snap.data() } as Enrollment;
+    const { data, error } = await supabase
+      .from('enrollments')
+      .select('*')
+      .eq('id', docId)
+      .single();
+
+    if (error || !data) {
+      return mockEnrollments.find((e) => e.userId === 'mock-user' && e.courseId === courseId) ?? null;
+    }
+    return data as Enrollment;
   } catch {
     return mockEnrollments.find((e) => e.userId === 'mock-user' && e.courseId === courseId) ?? null;
   }
@@ -95,13 +90,11 @@ export async function enrollInCourse(userId: string, courseId: string): Promise<
     certificateEarned: false,
   };
 
-  const db = getDb();
-  if (db) {
-    try {
-      await setDoc(doc(db, 'enrollments', enrollment.id), enrollment);
-    } catch {
-      // fall through to return the local object
-    }
+  try {
+    const supabase = getDb();
+    await supabase.from('enrollments').upsert(enrollment);
+  } catch {
+    // fall through to return the local object
   }
 
   return enrollment;
@@ -113,33 +106,38 @@ export async function updateLessonProgress(
   lessonId: string,
   totalLessons: number
 ): Promise<Enrollment | null> {
-  const db = getDb();
   const docId = `${userId}_${courseId}`;
 
-  if (db) {
-    try {
-      const ref = doc(db, 'enrollments', docId);
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        const data = snap.data() as Enrollment;
-        const completed = data.completedLessons.includes(lessonId)
-          ? data.completedLessons
-          : [...data.completedLessons, lessonId];
-        const progress = Math.round((completed.length / totalLessons) * 100);
+  try {
+    const supabase = getDb();
+    const { data: existing } = await supabase
+      .from('enrollments')
+      .select('*')
+      .eq('id', docId)
+      .single();
 
-        await updateDoc(ref, {
-          completedLessons: arrayUnion(lessonId),
+    if (existing) {
+      const data = existing as Enrollment;
+      const completed = data.completedLessons.includes(lessonId)
+        ? data.completedLessons
+        : [...data.completedLessons, lessonId];
+      const progress = Math.round((completed.length / totalLessons) * 100);
+
+      await supabase
+        .from('enrollments')
+        .update({
+          completedLessons: completed,
           progress,
           currentLessonId: lessonId,
           lastAccessedAt: new Date().toISOString(),
           certificateEarned: progress >= 100,
-        });
+        })
+        .eq('id', docId);
 
-        return { ...data, completedLessons: completed, progress, certificateEarned: progress >= 100 };
-      }
-    } catch {
-      // fall through
+      return { ...data, completedLessons: completed, progress, certificateEarned: progress >= 100 };
     }
+  } catch {
+    // fall through
   }
 
   // Local fallback
@@ -158,18 +156,16 @@ export async function updateLessonProgress(
 /* ── Notes ────────────────────────────────────────────────── */
 
 export async function getNotes(userId: string, courseId: string): Promise<Note[]> {
-  const db = getDb();
-  if (!db) return mockNotes.filter((n) => n.courseId === courseId);
-
   try {
-    const q = query(
-      collection(db, 'notes'),
-      where('userId', '==', userId),
-      where('courseId', '==', courseId)
-    );
-    const snap = await getDocs(q);
-    if (snap.empty) return mockNotes.filter((n) => n.courseId === courseId);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Note);
+    const supabase = getDb();
+    const { data, error } = await supabase
+      .from('notes')
+      .select('*')
+      .eq('userId', userId)
+      .eq('courseId', courseId);
+
+    if (error || !data?.length) return mockNotes.filter((n) => n.courseId === courseId);
+    return data as Note[];
   } catch {
     return mockNotes.filter((n) => n.courseId === courseId);
   }
@@ -191,44 +187,41 @@ export async function saveNote(
     courseId,
     lessonId,
     content,
-    createdAt: existingNoteId ? now : now,
+    createdAt: now,
     updatedAt: now,
   };
 
-  const db = getDb();
-  if (db) {
-    try {
-      await setDoc(doc(db, 'notes', noteId), note);
-    } catch {
-      // fall through
-    }
+  try {
+    const supabase = getDb();
+    await supabase.from('notes').upsert(note);
+  } catch {
+    // fall through
   }
 
   return note;
 }
 
 export async function deleteNote(noteId: string): Promise<void> {
-  const db = getDb();
-  if (db) {
-    try {
-      await deleteDoc(doc(db, 'notes', noteId));
-    } catch {
-      // fall through
-    }
+  try {
+    const supabase = getDb();
+    await supabase.from('notes').delete().eq('id', noteId);
+  } catch {
+    // fall through
   }
 }
 
 /* ── Bookmarks ────────────────────────────────────────────── */
 
 export async function getBookmarks(userId: string): Promise<Bookmark[]> {
-  const db = getDb();
-  if (!db) return mockBookmarks;
-
   try {
-    const q = query(collection(db, 'bookmarks'), where('userId', '==', userId));
-    const snap = await getDocs(q);
-    if (snap.empty) return mockBookmarks;
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Bookmark);
+    const supabase = getDb();
+    const { data, error } = await supabase
+      .from('bookmarks')
+      .select('*')
+      .eq('userId', userId);
+
+    if (error || !data?.length) return mockBookmarks;
+    return data as Bookmark[];
   } catch {
     return mockBookmarks;
   }
@@ -241,47 +234,50 @@ export async function toggleBookmark(
   lessonTitle: string,
   courseTitle: string
 ): Promise<{ added: boolean }> {
-  const db = getDb();
   const bookmarkId = `${userId}_${courseId}_${lessonId}`;
 
-  if (db) {
-    try {
-      const ref = doc(db, 'bookmarks', bookmarkId);
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        await deleteDoc(ref);
-        return { added: false };
-      }
-      const bookmark: Bookmark = {
-        id: bookmarkId,
-        userId,
-        courseId,
-        lessonId,
-        lessonTitle,
-        courseTitle,
-        createdAt: new Date().toISOString(),
-      };
-      await setDoc(ref, bookmark);
-      return { added: true };
-    } catch {
-      // fall through
-    }
-  }
+  try {
+    const supabase = getDb();
+    const { data: existing } = await supabase
+      .from('bookmarks')
+      .select('id')
+      .eq('id', bookmarkId)
+      .single();
 
-  return { added: true };
+    if (existing) {
+      await supabase.from('bookmarks').delete().eq('id', bookmarkId);
+      return { added: false };
+    }
+
+    const bookmark: Bookmark = {
+      id: bookmarkId,
+      userId,
+      courseId,
+      lessonId,
+      lessonTitle,
+      courseTitle,
+      createdAt: new Date().toISOString(),
+    };
+    await supabase.from('bookmarks').insert(bookmark);
+    return { added: true };
+  } catch {
+    return { added: true };
+  }
 }
 
 /* ── Notifications ────────────────────────────────────────── */
 
 export async function getNotifications(userId: string): Promise<Notification[]> {
-  const db = getDb();
-  if (!db) return mockNotifications;
-
   try {
-    const q = query(collection(db, 'notifications'), where('userId', '==', userId));
-    const snap = await getDocs(q);
-    const dbNotifs = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Notification);
+    const supabase = getDb();
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('userId', userId);
 
+    if (error) return mockNotifications;
+
+    const dbNotifs = (data as Notification[]) ?? [];
     const merged = [...dbNotifs];
     for (const mockNotif of mockNotifications) {
       if (!merged.some((n) => n.id === mockNotif.id)) {
@@ -295,15 +291,15 @@ export async function getNotifications(userId: string): Promise<Notification[]> 
 }
 
 export async function markNotificationRead(notificationId: string): Promise<void> {
-  const db = getDb();
-  if (db) {
-    try {
-      await updateDoc(doc(db, 'notifications', notificationId), { read: true });
-    } catch {
-      // fall through
-    }
+  try {
+    const supabase = getDb();
+    await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('id', notificationId);
+  } catch {
+    // fall through
   }
-  // Also update mock for local state
   const notif = mockNotifications.find((n) => n.id === notificationId);
   if (notif) notif.read = true;
 }
@@ -311,14 +307,16 @@ export async function markNotificationRead(notificationId: string): Promise<void
 /* ── Certificates ─────────────────────────────────────────── */
 
 export async function getCertificates(userId: string): Promise<Certificate[]> {
-  const db = getDb();
-  if (!db) return mockCertificates;
-
   try {
-    const q = query(collection(db, 'certificates'), where('userId', '==', userId));
-    const snap = await getDocs(q);
-    const dbCerts = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Certificate);
+    const supabase = getDb();
+    const { data, error } = await supabase
+      .from('certificates')
+      .select('*')
+      .eq('userId', userId);
 
+    if (error) return mockCertificates;
+
+    const dbCerts = (data as Certificate[]) ?? [];
     const merged = [...dbCerts];
     for (const mockCert of mockCertificates) {
       if (!merged.some((c) => c.id === mockCert.id)) {
@@ -347,13 +345,11 @@ export async function issueCertificate(
     certificateNumber: generateCertificateId(),
   };
 
-  const db = getDb();
-  if (db) {
-    try {
-      await setDoc(doc(db, 'certificates', cert.id), cert);
-    } catch {
-      // fall through
-    }
+  try {
+    const supabase = getDb();
+    await supabase.from('certificates').insert(cert);
+  } catch {
+    // fall through
   }
 
   return cert;
@@ -364,13 +360,11 @@ export async function issueCertificate(
 export async function submitQuizAttempt(attempt: Omit<QuizAttempt, 'id'>): Promise<QuizAttempt> {
   const full: QuizAttempt = { ...attempt, id: `qa-${Date.now()}` };
 
-  const db = getDb();
-  if (db) {
-    try {
-      await setDoc(doc(db, 'quizAttempts', full.id), full);
-    } catch {
-      // fall through
-    }
+  try {
+    const supabase = getDb();
+    await supabase.from('quizAttempts').insert(full);
+  } catch {
+    // fall through
   }
 
   return full;
@@ -390,50 +384,50 @@ export async function submitAssignment(
     submittedAt: new Date().toISOString(),
   };
 
-  const db = getDb();
-  if (db) {
-    try {
-      await setDoc(doc(db, 'submissions', submission.id), { ...submission, assignmentId });
-    } catch {
-      // fall through
-    }
+  try {
+    const supabase = getDb();
+    await supabase.from('submissions').insert({ ...submission, assignmentId });
+  } catch {
+    // fall through
   }
 
   return submission;
 }
 
 export async function getCourses(): Promise<Course[]> {
-  const db = getDb();
-  if (!db) return courses;
   try {
-    const q = query(collection(db, 'courses'), where('status', '==', 'published'));
-    const snap = await getDocs(q);
-    const dbCourses = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Course);
-    if (dbCourses.length === 0) {
-      return courses;
-    }
-    return dbCourses;
+    const supabase = getDb();
+    const { data, error } = await supabase
+      .from('courses')
+      .select('*')
+      .eq('status', 'published');
+
+    if (error || !data?.length) return courses;
+    return data as Course[];
   } catch (e) {
-    console.error('Failed to get courses from Firestore:', e);
+    console.error('Failed to get courses from Supabase:', e);
     return courses;
   }
 }
 
 export async function getCourseBySlug(idOrSlug: string): Promise<Course | null> {
-  const db = getDb();
-  if (!db) return courses.find((c) => c.id === idOrSlug || c.slug === idOrSlug) || null;
   try {
-    const q = query(collection(db, 'courses'), where('slug', '==', idOrSlug));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      const d = snap.docs[0];
-      return { id: d.id, ...d.data() } as Course;
-    }
+    const supabase = getDb();
+    const { data: bySlug } = await supabase
+      .from('courses')
+      .select('*')
+      .eq('slug', idOrSlug)
+      .single();
 
-    const docSnap = await getDoc(doc(db, 'courses', idOrSlug));
-    if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() } as Course;
-    }
+    if (bySlug) return bySlug as Course;
+
+    const { data: byId } = await supabase
+      .from('courses')
+      .select('*')
+      .eq('id', idOrSlug)
+      .single();
+
+    if (byId) return byId as Course;
 
     return courses.find((c) => c.id === idOrSlug || c.slug === idOrSlug) || null;
   } catch (e) {

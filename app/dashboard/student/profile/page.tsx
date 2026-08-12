@@ -5,8 +5,7 @@ import RoleProtectedRoute from '../../../../components/RoleProtectedRoute';
 import DashboardShell from '../../../../components/DashboardShell';
 import DashboardCard from '../../../../components/DashboardCard';
 import { useAuth } from '../../../../components/AuthProvider';
-import { doc, setDoc } from 'firebase/firestore';
-import { getFirebaseFirestore } from '../../../../lib/firebase';
+import { createClient } from '../../../../lib/supabase/client';
 import { User, School, BookOpen, FileText, Loader2, Sparkles } from 'lucide-react';
 import UserProfileCard from '../../../../components/UserProfileCard';
 
@@ -37,18 +36,21 @@ export default function StudentProfilePage() {
     setSaving(true);
     setToast(null);
 
-    const db = getFirebaseFirestore();
-    if (db) {
       try {
-        const userRef = doc(db, 'users', user.uid);
-        await setDoc(userRef, {
-          name,
-          institute,
-          title,
-          bio,
-          onboardingComplete: true,
-          role: profile?.role ?? 'student'
-        }, { merge: true });
+        const supabase = createClient();
+        const { error } = await supabase
+          .from('users')
+          .upsert({
+            id: user.id,
+            name,
+            institute,
+            title,
+            bio,
+            onboardingComplete: true,
+            role: profile?.role ?? 'student'
+          });
+          
+        if (error) throw error;
         
         setToast('✅ Profile saved successfully!');
         setTimeout(() => {
@@ -61,10 +63,6 @@ export default function StudentProfilePage() {
       } finally {
         setSaving(false);
       }
-    } else {
-      setToast('❌ Database connection error.');
-      setSaving(false);
-    }
   };
 
   if (loading) {

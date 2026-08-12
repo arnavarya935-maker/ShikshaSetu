@@ -6,8 +6,7 @@ import RoleProtectedRoute from '../../../../components/RoleProtectedRoute';
 import DashboardShell from '../../../../components/DashboardShell';
 import DashboardCard from '../../../../components/DashboardCard';
 import { useAuth } from '../../../../components/AuthProvider';
-import { getFirebaseFirestore } from '../../../../lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { createClient } from '../../../../lib/supabase/client';
 import UserProfileCard from '../../../../components/UserProfileCard';
 
 export default function EducatorProfilePage() {
@@ -39,16 +38,18 @@ export default function EducatorProfilePage() {
     setSuccess(false);
 
     try {
-      const db = getFirebaseFirestore();
-      if (db) {
-        const ref = doc(db, 'users', user.uid);
-        await setDoc(ref, {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('users')
+        .update({
           name,
           institute,
           title,
           bio,
-        }, { merge: true });
-      }
+        })
+        .eq('id', user.id);
+        
+      if (error) throw error;
       
       // Update local profile state in memory if needed (will refresh on page reload)
       if (profile) {

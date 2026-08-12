@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { getFirebaseFirestore } from '../lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { createClient } from '../lib/supabase/client';
 import { ArrowUpRight } from 'lucide-react';
 
 export default function NewsletterForm() {
@@ -16,13 +15,12 @@ export default function NewsletterForm() {
     
     setSubmitting(true);
     try {
-      const db = getFirebaseFirestore();
-      if (db) {
-        await addDoc(collection(db, 'newsletter'), {
-          email: email.trim(),
-          subscribedAt: new Date().toISOString(),
-        });
-      }
+      const supabase = createClient();
+      const { error } = await supabase.from('newsletter').insert({
+        email: email.trim(),
+        subscribedAt: new Date().toISOString(),
+      });
+      if (error) throw error;
       setSubmitted(true);
     } catch (err) {
       console.error('Failed to save newsletter subscription to Firestore:', err);
