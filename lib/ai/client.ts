@@ -1,7 +1,7 @@
 'use client';
 
 import type { QuizQuestion } from '../lms/types';
-import { getFirebaseAuth } from '../firebase';
+import { createClient } from '../supabase/client';
 
 export type AiSummaryResponse = {
   summary: string;
@@ -25,12 +25,17 @@ export type RecommendationsResponse = {
 };
 
 export async function getAuthHeaders(): Promise<Record<string, string>> {
-  const auth = getFirebaseAuth();
-  const token = auth?.currentUser ? await auth.currentUser.getIdToken() : '';
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
-  };
+  try {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token ?? '';
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    };
+  } catch {
+    return { 'Content-Type': 'application/json' };
+  }
 }
 
 export async function askAiTutor(message: string, history: { role: 'user' | 'assistant'; content: string }[]): Promise<string> {
