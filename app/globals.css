@@ -72,21 +72,21 @@ html.dark ::selection {
 }
 
 /* ── Light Mode / Dark Mode Container & Color Adaptations ─────── */
-/* In Light Mode: Replace dark grey box layouts with very light soft pink `#FDF4F8` / `#FAF0F6` */
+/* In Light Mode: Use pure minimal whites and grays */
 html:not(.dark) .bg-slate-950,
 html:not(.dark) .bg-slate-900,
 html:not(.dark) .bg-slate-850,
 html:not(.dark) .bg-slate-800,
 html:not(.dark) .bg-zinc-800,
 html:not(.dark) .bg-zinc-900 {
-  background-color: #FDF4F8 !important;
+  background-color: #FAFAFA !important;
   color: #18181b !important;
 }
 
 html:not(.dark) .border-slate-800,
 html:not(.dark) .border-slate-700,
 html:not(.dark) .border-zinc-800 {
-  border-color: #FBCFE8 !important;
+  border-color: #E5E7EB !important;
 }
 
 /* ── Global Enterprise Button System Overrides ─────── */

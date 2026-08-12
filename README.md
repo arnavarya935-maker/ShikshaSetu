@@ -1,54 +1,51 @@
 # 🎓 ShikshaSetu (शिक्षासेतु)
 
-> **Next-Generation AI-Powered Adaptive Learning Platform**
-
-ShikshaSetu is a modern educational platform designed to transform scattered notes, PDFs, and study goals into personalized lessons, interactive practice quizzes, and calm, structured progress insights.
+Welcome to **ShikshaSetu**—a next-generation, AI-driven adaptive learning platform. ShikshaSetu is built to turn your scattered study materials, PDFs, and goals into a unified, interactive, and personalized educational journey.
 
 ---
 
-## 🌟 Key Features
+## 🚀 What We Offer
 
-### 🧠 AI-Powered Learning Tools
-- **AI Notes & Syllabus Summarizer**: Instantly converts raw notes or PDF readings into executive summaries, key bullet takeaways, and interactive 3D flip flashcards.
-- **Dynamic AI Quiz Builder**: Generates customized multiple-choice practice quizzes from any academic subject or uploaded document.
-- **PDF to Quiz Converter**: Drag & drop any PDF syllabus or textbook chapter to automatically compile exam-ready quiz questions.
-- **24/7 AI Study Tutor**: Interactive AI chat workspace to explain complex concepts, solve homework doubts, and review code blocks.
-- **AI Study Calendar & Sprints**: Builds weekly milestone targets based on your target completion timeline and daily hours commitment.
-- **AI Focus Recommendations**: Analyzes course progress and recommends next steps and complementary courses.
+### 🤖 AI-Powered Learning Enhancements
+- **Smart Notes & Summaries**: Transform messy notes or long PDFs into concise summaries, key takeaways, and 3D flashcards instantly.
+- **Dynamic Quiz Generation**: Automatically generate customized multiple-choice questions from uploaded documents or specific academic topics.
+- **24/7 AI Tutor**: Get round-the-clock assistance with complex concepts, homework, and coding problems via an interactive chat workspace.
+- **Adaptive Study Planner**: Generate weekly learning milestones based on your specific goals and available daily study time.
+- **Intelligent Recommendations**: Receive personalized suggestions for next steps and related courses based on your progress.
 
-### 🏫 Multi-Role LMS Portals
-- **Student Dashboard**: Streak tracking, course progress overview, interactive study tools workspace, assignment submission, and verifiable certificate generation.
-- **Teacher Workspace**: Course management, student analytics, assignment publishing, and class schedule management.
-- **Admin Control Panel**: Platform-wide metrics, user role management, system settings, and course catalog configuration.
+### 🏢 Comprehensive Multi-Role Portals
+- **Student Dashboard**: Track streaks and progress, access interactive study tools, submit assignments, and earn verifiable certificates.
+- **Teacher Workspace**: Manage courses, publish assignments, organize schedules, and monitor student analytics effortlessly.
+- **Admin Control Panel**: Oversee the entire platform, manage user roles, configure system settings, and update the course catalog.
 
-### 🎨 Premium SynthAI Design System
-- **Light & Dark Mode**: Toggle between high-contrast dark mode and soft pastel light mode with customizable theme tokens.
-- **Scroll-Driven Feature Animations**: Sticky 60fps card progression powered by Framer Motion spring physics.
-- **Multi-Language Support**: Seamless language switcher supporting **English (`en`)** and **Hindi (`hi`)**.
-- **Responsive Layout**: Designed for mobile phones, tablets, and desktop displays.
+### 🎨 Modern SynthAI Design
+- **Flexible Themes**: Switch seamlessly between a high-contrast dark mode and a soft, pastel light mode.
+- **Engaging UI/UX**: Enjoy 60fps scroll-driven animations powered by Framer Motion.
+- **Multilingual Support**: Fully accessible in **English (`en`)** and **Hindi (`hi`)**.
+- **Fully Responsive**: Optimized for desktops, tablets, and mobile devices.
 
 ---
 
-## 🛠️ Tech Stack
+## 💻 Technology Stack
 
-- **Framework**: [Next.js 14](https://nextjs.org/) (App Router)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **UI & Styling**: [Tailwind CSS](https://tailwindcss.com/), [Framer Motion](https://www.framer.com/motion/), [Lucide React](https://lucide.dev/)
-- **Authentication**: [Firebase Auth](https://firebase.google.com/docs/auth) (Email/Password & Google Sign-In)
+- **Core Framework**: [Next.js 14](https://nextjs.org/) (App Router)
+- **Programming Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling & UI**: [Tailwind CSS](https://tailwindcss.com/), [Framer Motion](https://www.framer.com/motion/), [Lucide React](https://lucide.dev/)
+- **Authentication**: [Firebase Auth](https://firebase.google.com/docs/auth)
 - **Database**: [Firebase Firestore](https://firebase.google.com/docs/firestore)
-- **PDF Extraction**: `pdfjs-dist`
+- **PDF Processing**: `pdfjs-dist`
 
 ---
 
-## 🚀 Getting Started
+## ⚙️ Getting Started
 
 ### Prerequisites
 
-Ensure you have the following installed on your local machine:
-- [Node.js](https://nodejs.org/) (v18.0.0 or higher)
-- `npm` or `yarn` / `pnpm`
+Before you begin, ensure you have the following installed:
+- [Node.js](https://nodejs.org/) (v18.0.0 or newer)
+- `npm`, `yarn`, or `pnpm`
 
-### Installation
+### Installation Guide
 
 1. **Clone the repository**:
    ```bash
@@ -62,65 +59,61 @@ Ensure you have the following installed on your local machine:
    ```
 
 3. **Configure Environment Variables**:
-   Create a `.env.local` file in the root directory and add your Firebase credentials:
+   Create an `.env` (or `.env.local`) file in the root directory. You will need the following secrets and variables to run this project properly. 
+   
+   **Firebase Configuration** (Get these from your Firebase Console):
+   - `NEXT_PUBLIC_FIREBASE_API_KEY`
+   - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+   - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+   - `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+   - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+   - `NEXT_PUBLIC_FIREBASE_APP_ID`
+   
+   **AI Integration** (Get this from Google AI Studio):
+   - `GEMINI_API_KEY`
+
+   Example `.env` file structure:
    ```env
-   NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
-   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
-   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-   NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+   NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_firebase_project_id
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
+   NEXT_PUBLIC_FIREBASE_APP_ID=your_firebase_app_id
+   GEMINI_API_KEY=your_gemini_api_key
    ```
 
-4. **Run the Development Server**:
+4. **Start the Development Server**:
    ```bash
    npm run dev
    ```
 
-5. Open your browser and navigate to [http://localhost:3000](http://localhost:3000).
+5. Visit [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 📁 Repository Structure
+## 📂 Project Structure
 
 ```
 ShikshaSetu/
-├── app/                      # Next.js App Router routes & pages
-│   ├── api/                  # Backend API routes
-│   ├── courses/              # Course catalog & detail pages
-│   ├── dashboard/            # Student, Teacher, and Admin LMS portals
-│   ├── learn/                # Course player, lessons, and certificate generator
-│   ├── login/ & signup/      # Authentication shells
-│   ├── globals.css           # Global design system & theme variables
-│   └── page.tsx              # Homepage
-├── components/               # Reusable UI components
-│   ├── lms/                  # LMS specific panels (AI Tutor, Quiz, Summary, Planner)
-│   ├── FeaturesSection.tsx   # Sticky scroll-driven feature showcase
-│   ├── HeroSection.tsx       # Landing hero with AI showcase mockup
-│   ├── Navbar.tsx            # Header navigation & theme/language toggle
-│   └── Footer.tsx            # Multi-column footer
-├── lib/                      # Business logic, Firebase config, & AI integrations
-│   ├── ai/                   # AI client utilities
-│   ├── firebase/             # Firebase SDK initialization & auth helpers
-│   ├── language/             # Localization context (English & Hindi)
-│   └── lms/                  # LMS data schemas & course catalogs
-├── public/                   # Static assets & icons
-└── tailwind.config.ts        # Custom colors, shadows, and design tokens
+├── app/                      # Next.js routes, pages, and API endpoints
+├── components/               # Reusable UI elements (LMS panels, Navbar, etc.)
+├── lib/                      # Core business logic, Firebase setup, and AI utilities
+├── public/                   # Static images, icons, and assets
+└── tailwind.config.ts        # Custom theme definitions and tokens
 ```
 
 ---
 
 ## 📜 Available Scripts
 
-In the project directory, you can run:
-
-- `npm run dev` – Starts the development server at `http://localhost:3000`.
-- `npm run build` – Compiles an optimized production build.
-- `npm run start` – Starts the production server after building.
-- `npm run lint` – Runs Next.js ESLint checks.
+- `npm run dev` – Launch the local development server.
+- `npm run build` – Compile the application for production.
+- `npm run start` – Run the production build.
+- `npm run lint` – Execute ESLint checks.
 
 ---
 
-## 📄 License
+## ⚖️ License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+This project is licensed under the MIT License. See the `LICENSE` file for more details.
