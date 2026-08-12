@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation';
 import { type User as SupabaseUser } from '@supabase/supabase-js';
 import { createClient } from '../lib/supabase/client';
 
-// Compatibility shim: adds `uid` as an alias for Supabase's `id`
-// so all existing code using `user.uid` works without modification.
-export type User = SupabaseUser & { uid: string };
+// Compatibility shim: adds Firebase-style properties so all existing code
+// using user.uid / user.displayName / user.email works without modification.
+export type User = SupabaseUser & {
+  uid: string;
+  displayName: string | null;
+};
 
 export type ProfileRole = 'student' | 'teacher' | 'admin';
 
@@ -38,10 +41,14 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-// Helper: wrap a Supabase user with uid compatibility shim
+// Helper: wrap a Supabase user with Firebase-compatible properties
 function toCompatUser(u: SupabaseUser | null): User | null {
   if (!u) return null;
-  return { ...u, uid: u.id };
+  return {
+    ...u,
+    uid: u.id,
+    displayName: u.user_metadata?.full_name ?? u.email ?? null,
+  };
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
