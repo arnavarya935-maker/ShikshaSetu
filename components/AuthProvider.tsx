@@ -61,27 +61,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loadUserProfile = async (currentUser: User | null) => {
     if (!currentUser) return null;
 
+    let profileData = null;
     try {
-      const { data: profileData, error } = await supabase
+      const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', currentUser.id)
         .single();
-
-      if (error || !profileData) return null;
-
-      return {
-        name: profileData.name ?? currentUser.user_metadata?.full_name ?? '',
-        institute: profileData.institute ?? '',
-        role: (profileData.role as ProfileRole) ?? 'student',
-        onboardingComplete: Boolean(profileData.onboardingComplete),
-        title: profileData.title ?? '',
-        bio: profileData.bio ?? '',
-      } as UserProfile;
+      if (!error && data) profileData = data;
     } catch (error) {
-      console.error('Failed to load user profile:', error);
-      return null;
+      console.warn('Failed to fetch from users table:', error);
     }
+    
+    const meta = currentUser.user_metadata || {};
+    const hasDbProfile = !!profileData;
+    const hasMetaProfile = !!meta.onboardingComplete;
+
+    if (!hasDbProfile && !hasMetaProfile) return null;
+
+    return {
+      name: profileData?.name ?? meta?.full_name ?? '',
+      institute: profileData?.institute ?? meta?.institute ?? '',
+      role: (profileData?.role as ProfileRole) ?? meta?.role ?? 'student',
+      onboardingComplete: Boolean(profileData?.onboardingComplete || meta?.onboardingComplete),
+      title: profileData?.title ?? meta?.title ?? '',
+      bio: profileData?.bio ?? meta?.bio ?? '',
+    } as UserProfile;
   };
 
   useEffect(() => {
@@ -133,11 +138,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const { error } = await supabase.from('users').upsert(profileToSave);
-    if (error) throw error;
-
-    if (profileInput.name && user.user_metadata?.full_name !== profileInput.name) {
-      await supabase.auth.updateUser({ data: { full_name: profileInput.name } });
+    if (error) {
+      console.warn('Failed to save profile to users table, falling back to auth metadata.', error);
     }
+
+    await supabase.auth.updateUser({ 
+      data: { 
+        full_name: profileInput.name,
+        institute: profileInput.institute,
+        role: profileInput.role,
+        onboardingComplete: true
+      } 
+    });
 
     setProfile(profileToSave as UserProfile);
     router.replace('/dashboard');
