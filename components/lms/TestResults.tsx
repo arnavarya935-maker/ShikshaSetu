@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { MockTest } from '../../../lib/data/mockTests';
+import { MockTest } from '../../lib/data/mockTests';
 import { CheckCircle2, XCircle, Clock, ArrowLeft, Trophy } from 'lucide-react';
 
 type TestResultsProps = {
