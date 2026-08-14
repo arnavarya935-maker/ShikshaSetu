@@ -64,8 +64,9 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
       {mode === 'signup' ? (
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">{t('auth_name_label')}</label>
+          <label htmlFor="name-input" className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">{t('auth_name_label')}</label>
           <input
+            id="name-input"
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder={t('auth_name_placeholder')}
@@ -76,8 +77,9 @@ export default function AuthForm({ mode }: AuthFormProps) {
       ) : null}
 
       <div className="space-y-1.5">
-        <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">{t('auth_email_label')}</label>
+        <label htmlFor="email-input" className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">{t('auth_email_label')}</label>
         <input
+          id="email-input"
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
@@ -89,8 +91,9 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
       {mode !== 'forgot' ? (
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">{t('auth_password_label')}</label>
+          <label htmlFor="password-input" className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">{t('auth_password_label')}</label>
           <input
+            id="password-input"
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
@@ -111,6 +114,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
       <button
         type="submit"
+        aria-label={mode === 'login' ? 'Login to your account' : mode === 'signup' ? 'Sign up for a new account' : 'Reset your password'}
         disabled={isSubmitting || !isConfigured}
         className="w-full rounded-lg bg-[#171717] hover:bg-[#262626] dark:bg-white dark:hover:bg-zinc-100 px-5 py-3 text-xs font-medium uppercase tracking-wider !text-white dark:!text-[#171717] transition-colors shadow-none disabled:cursor-not-allowed disabled:opacity-60"
       >
@@ -128,6 +132,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
           <button
             type="button"
             onClick={handleGoogleSignIn}
+            aria-label="Sign in with Google"
             disabled={isSubmitting || !isConfigured}
             className="w-full rounded-lg border border-[#DCDCDC] dark:border-zinc-800 bg-white dark:bg-zinc-900 px-5 py-3 text-xs font-medium uppercase tracking-wider text-[#171717] dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-none disabled:cursor-not-allowed disabled:opacity-60"
           >

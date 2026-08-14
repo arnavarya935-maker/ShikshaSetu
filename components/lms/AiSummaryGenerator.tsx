@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { FileText, Sparkles, RefreshCw, Layers } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { FileText, Sparkles, RefreshCw, Layers, Download } from 'lucide-react';
 import { generateNotesAndSummary } from '../../lib/ai/client';
 import PdfDragDropUpload from './PdfDragDropUpload';
 
@@ -13,6 +13,8 @@ type Flashcard = {
 export default function AiSummaryGenerator() {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<'summary' | 'detailed'>('summary');
+  const resultsRef = useRef<HTMLDivElement>(null);
   
   // Results
   const [summary, setSummary] = useState('');
@@ -26,7 +28,7 @@ export default function AiSummaryGenerator() {
     setFlippedCards(new Set());
 
     try {
-      const data = await generateNotesAndSummary(text);
+      const data = await generateNotesAndSummary(text, mode);
       setSummary(data.summary);
       setTakeaways(data.takeaways);
       setFlashcards(data.flashcards);
@@ -44,6 +46,58 @@ export default function AiSummaryGenerator() {
       else next.add(idx);
       return next;
     });
+  };
+
+  const handleExportPDF = () => {
+    if (typeof window === 'undefined') return;
+    
+    // In a real application, you'd use jspdf or html2pdf, but here we can trigger print prompt
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const htmlContent = `
+      <html>
+        <head>
+          <title>ShikshaSetu Detailed Notes</title>
+          <style>
+            body { font-family: system-ui, sans-serif; line-height: 1.6; color: #111; max-width: 800px; margin: 0 auto; padding: 2rem; }
+            h1 { color: #e11d48; border-bottom: 2px solid #e11d48; padding-bottom: 0.5rem; }
+            h2 { color: #333; margin-top: 2rem; }
+            ul { margin-bottom: 2rem; }
+            li { margin-bottom: 0.5rem; }
+            .flashcard { border: 1px solid #ccc; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; page-break-inside: avoid; }
+            .front { font-weight: bold; margin-bottom: 0.5rem; }
+          </style>
+        </head>
+        <body>
+          <h1>ShikshaSetu ${mode === 'detailed' ? 'Detailed Notes' : 'Summary'}</h1>
+          <h2>Overview</h2>
+          <p>${summary}</p>
+          
+          <h2>Key Takeaways / Detailed Points</h2>
+          <ul>
+            ${takeaways.map(t => `<li>${t}</li>`).join('')}
+          </ul>
+          
+          ${flashcards.length > 0 ? `
+            <h2>Flashcards & Key Terms</h2>
+            ${flashcards.map(c => `
+              <div class="flashcard">
+                <div class="front">Q: ${c.front}</div>
+                <div>A: ${c.back}</div>
+              </div>
+            `).join('')}
+          ` : ''}
+          
+          <script>
+            window.onload = () => { window.print(); window.close(); }
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
   };
 
   return (
@@ -65,6 +119,31 @@ export default function AiSummaryGenerator() {
         />
 
         <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+              <input 
+                type="radio" 
+                name="mode" 
+                value="summary" 
+                checked={mode === 'summary'} 
+                onChange={(e) => setMode(e.target.value as 'summary' | 'detailed')}
+                className="text-rose-600 focus:ring-rose-500"
+              />
+              Brief Summary
+            </label>
+            <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+              <input 
+                type="radio" 
+                name="mode" 
+                value="detailed" 
+                checked={mode === 'detailed'} 
+                onChange={(e) => setMode(e.target.value as 'summary' | 'detailed')}
+                className="text-rose-600 focus:ring-rose-500"
+              />
+              Detailed Notes (for books)
+            </label>
+          </div>
+
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -98,10 +177,23 @@ export default function AiSummaryGenerator() {
             <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-400">Summaries, bullet takeaways, and flashcards will appear here.</p>
           </div>
         ) : (
-          <div className="space-y-5">
+          <div className="space-y-5" ref={resultsRef}>
+            <div className="flex justify-between items-center mb-4 border-b border-rose-200/80 dark:border-zinc-800 pb-2">
+              <span className="text-xs font-mono font-bold text-zinc-900 dark:text-white uppercase tracking-wider block">
+                {mode === 'detailed' ? 'Detailed Chapter Notes' : 'Executive Summary'}
+              </span>
+              <button 
+                onClick={handleExportPDF}
+                className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 transition-colors"
+                aria-label="Export as PDF"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export PDF
+              </button>
+            </div>
+
             {/* Summary */}
             <div className="space-y-2">
-              <span className="text-xs font-mono font-bold text-zinc-900 dark:text-white uppercase tracking-wider block">Executive Summary</span>
               <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-rose-200/80 dark:border-zinc-800 shadow-sm">
                 {summary}
               </p>

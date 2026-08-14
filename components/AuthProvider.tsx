@@ -142,7 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.warn('Failed to save profile to users table, falling back to auth metadata.', error);
     }
 
-    await supabase.auth.updateUser({ 
+    const { error: authError } = await supabase.auth.updateUser({ 
       data: { 
         full_name: profileInput.name,
         institute: profileInput.institute,
@@ -150,6 +150,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         onboardingComplete: true
       } 
     });
+
+    if (authError) {
+      console.error('Supabase Auth update error:', authError);
+      throw authError;
+    }
 
     setProfile(profileToSave as UserProfile);
     router.replace('/dashboard');

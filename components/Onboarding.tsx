@@ -53,8 +53,9 @@ export default function Onboarding() {
     try {
       await completeOnboarding({ name, institute, role });
       router.replace('/dashboard');
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Unable to complete onboarding.');
+    } catch (caughtError: any) {
+      console.error('Onboarding Error:', caughtError);
+      setError(caughtError?.message || JSON.stringify(caughtError) || 'Unable to complete onboarding.');
     } finally {
       setIsSubmitting(false);
     }

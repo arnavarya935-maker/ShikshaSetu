@@ -19,6 +19,8 @@ export default function Navbar() {
 
   const navItems = [
     { href: '/#features', label: t('nav_features') },
+    { href: '/about', label: 'About' },
+    { href: '/contact', label: 'Contact' },
     { href: '/#faqs', label: t('nav_faqs') },
     { href: '/#newsletter', label: t('nav_updates') }
   ];
@@ -159,14 +161,14 @@ export default function Navbar() {
         <div className="border-t border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 px-6 py-6 md:hidden">
           <div className="flex flex-col gap-4">
             {navItems.map((item) => (
-              <a
+              <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
                 className="text-xs font-semibold tracking-widest uppercase text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
               >
                 {item.label}
-              </a>
+              </Link>
             ))}
             <div className="mt-4 flex flex-col gap-3 pt-3 border-t border-zinc-200 dark:border-zinc-800">
               {isLoggedIn ? (

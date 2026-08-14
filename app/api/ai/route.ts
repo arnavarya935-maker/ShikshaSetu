@@ -93,13 +93,17 @@ Output only the JSON block. Do not write markdown tags or text around the JSON.`
     }
 
     if (action === 'summary') {
-      const { text } = body;
-      const prompt = `You are an academic text summarizer. Create notes and flashcards for the following text:
+      const { text, mode } = body;
+      const instruction = mode === 'detailed' 
+        ? "Create highly detailed, comprehensive study notes chapter-by-chapter and exhaustive flashcards for the following text (book/document):"
+        : "Create brief notes and flashcards for the following text:";
+
+      const prompt = `You are an academic text summarizer. ${instruction}
 "${text}"
 Output MUST be valid JSON conforming to this TypeScript type:
 {
-  summary: string; // Brief executive summary
-  takeaways: string[]; // List of core bullet point details
+  summary: string; // Brief executive summary or comprehensive abstract if detailed
+  takeaways: string[]; // List of core bullet point details or detailed study points
   flashcards: Array<{ front: string; back: string }>; // Key terms and definitions
 }
 Output only the JSON block. Do not write markdown tags or text around the JSON.`;

@@ -84,8 +84,8 @@ export default function PdfDragDropUpload({ onTextExtracted, className }: PdfDra
           }
 
           setSuccessFile(file.name);
-          // Return the first 6000 chars to fit prompt guidelines cleanly
-          onTextExtracted(cleanedText.substring(0, 6000), file.name);
+          // Return a large chunk of chars to fit Gemini's context window
+          onTextExtracted(cleanedText.substring(0, 250000), file.name);
         } catch (err: any) {
           console.error(err);
           setError(err.message || 'Error parsing PDF structure.');

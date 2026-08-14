@@ -78,13 +78,13 @@ export async function generateAiQuiz(topic: string, text?: string): Promise<Quiz
   }
 }
 
-export async function generateNotesAndSummary(text: string): Promise<AiSummaryResponse> {
+export async function generateNotesAndSummary(text: string, mode: 'summary' | 'detailed' = 'summary'): Promise<AiSummaryResponse> {
   try {
     const headers = await getAuthHeaders();
     const res = await fetch('/api/ai', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ action: 'summary', text }),
+      body: JSON.stringify({ action: 'summary', text, mode }),
     });
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
