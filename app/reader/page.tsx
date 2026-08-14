@@ -22,9 +22,12 @@ export default function ReaderPage() {
   const triggerUpload = () => fileInputRef.current?.click();
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-50">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#090505] text-slate-900 dark:text-zinc-50 relative overflow-hidden">
+      {/* Background Glow */}
+      <div className="absolute top-1/4 left-1/4 w-full max-w-2xl h-[300px] bg-rose-500/10 dark:bg-rose-500/5 blur-[120px] rounded-full pointer-events-none" />
+      
       <Navbar />
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-10 mt-16 flex flex-col">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-10 mt-16 flex flex-col relative z-10">
         <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight text-rose-600 dark:text-rose-500">
@@ -44,7 +47,7 @@ export default function ReaderPage() {
           )}
         </header>
 
-        <div className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-soft flex flex-col relative min-h-[600px]">
+        <div className="flex-1 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-slate-200/80 dark:border-zinc-800/80 rounded-3xl overflow-hidden shadow-elevated flex flex-col relative min-h-[600px]">
           <input 
             type="file" 
             ref={fileInputRef}

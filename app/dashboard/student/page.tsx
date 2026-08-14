@@ -134,10 +134,15 @@ export default function StudentDashboardPage() {
               </div>
             </div>
 
-            {/* AI Concept Explainer */}
-            <div className="mb-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.1 }}
+              className="mb-6 relative"
+            >
+              <div className="absolute -inset-1 bg-gradient-to-r from-rose-500/20 to-indigo-500/10 rounded-[2.5rem] blur-xl opacity-50 pointer-events-none" />
               <ConceptExplainer />
-            </div>
+            </motion.div>
 
             {/* Statistics and Learning Progress row */}
             <div className="grid gap-6 md:grid-cols-2">
@@ -189,10 +194,16 @@ export default function StudentDashboardPage() {
             </div>
 
             {/* Assessment Analytics Row */}
-            <div className="grid gap-6 md:grid-cols-2 mt-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.2 }}
+              className="grid gap-6 md:grid-cols-2 mt-6 relative"
+            >
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-rose-500/5 rounded-full blur-[80px] pointer-events-none" />
               <MasteryHeatmap />
               <TimeTracker />
-            </div>
+            </motion.div>
           </motion.div>
 
           {/* Right Column */}
