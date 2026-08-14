@@ -105,6 +105,7 @@ Output MUST be valid JSON conforming to this TypeScript type:
   summary: string; // Brief executive summary or comprehensive abstract if detailed
   takeaways: string[]; // List of core bullet point details or detailed study points
   flashcards: Array<{ front: string; back: string }>; // Key terms and definitions
+  mindMap: string; // A valid Mermaid.js graph string (e.g. "graph TD\n A-->B") mapping the core concepts
 }
 Output only the JSON block. Do not write markdown tags or text around the JSON.`;
 
@@ -180,6 +181,22 @@ ${coursesPrompt}`;
       const responseText = await callGemini(geminiUrl, prompt);
       const json = cleanAndParseJson(responseText);
       return NextResponse.json(json);
+    }
+
+    if (action === 'explain') {
+      const { concept, level } = body;
+      const prompt = `You are an expert tutor for ShikshaSetu LMS. Explain the concept of "${concept}" to a student.
+Target audience difficulty level: ${level}.
+(For context, 'ELI5' means Explain Like I'm 5, 'High School' means standard secondary education, 'College' means undergraduate academic rigor, and 'Expert' means deep technical or academic nuance).
+
+Format your response in Markdown with the following structure:
+1. A brief, intuitive analogy.
+2. The core explanation (adjusted for the difficulty level).
+3. 2-3 key takeaways or bullet points.
+Output ONLY the markdown text.`;
+
+      const responseText = await callGemini(geminiUrl, prompt);
+      return NextResponse.json({ explanation: responseText });
     }
 
     return NextResponse.json({ error: `Invalid action type parameters: ${action}` }, { status: 400 });

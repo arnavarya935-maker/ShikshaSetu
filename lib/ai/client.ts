@@ -7,6 +7,7 @@ export type AiSummaryResponse = {
   summary: string;
   takeaways: string[];
   flashcards: { front: string; back: string }[];
+  mindMap?: string;
 };
 
 export type AiPlanItem = {
@@ -169,6 +170,26 @@ export async function getAiRecommendations(
       focusRecommendation: 'Unable to load study focus recommendation due to an API error.',
       recommendedCourseIds: [],
     };
+  }
+}
+
+export async function explainConcept(concept: string, level: string): Promise<string> {
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch('/api/ai', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ action: 'explain', concept, level }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    return data.explanation;
+  } catch (err) {
+    console.error('Explain API Error:', err);
+    return 'Sorry, there was an error generating the explanation. Please try again.';
   }
 }
 

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, DragEvent } from 'react';
-import { UploadCloud, File, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { UploadCloud, File, AlertCircle, CheckCircle2, Loader2, BookOpen } from 'lucide-react';
+import Link from 'next/link';
 
 type PdfDragDropUploadProps = {
   onTextExtracted: (text: string, filename: string) => void;
@@ -165,10 +166,19 @@ export default function PdfDragDropUpload({ onTextExtracted, className }: PdfDra
             <p className="text-xs font-semibold text-white">{progress}</p>
           </div>
         ) : successFile ? (
-          <div className="space-y-2 py-2">
+          <div className="space-y-3 py-3 w-full">
             <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-400" />
-            <p className="text-xs font-bold text-white">Successfully Extracted!</p>
-            <p className="text-[10px] text-slate-400 font-mono truncate max-w-[250px] mx-auto">{successFile}</p>
+            <div>
+              <p className="text-xs font-bold text-white">Successfully Extracted!</p>
+              <p className="text-[10px] text-slate-400 font-mono truncate max-w-[250px] mx-auto">{successFile}</p>
+            </div>
+            
+            <div className="flex items-center justify-center gap-2 mt-2">
+              <Link href="/reader" className="flex items-center gap-1 bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition">
+                <BookOpen className="h-3 w-3" />
+                Open Reader
+              </Link>
+            </div>
             <p className="text-[9px] text-violet-400">Click or Drop another PDF to replace</p>
           </div>
         ) : (

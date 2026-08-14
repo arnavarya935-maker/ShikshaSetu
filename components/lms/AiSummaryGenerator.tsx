@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { FileText, Sparkles, RefreshCw, Layers, Download } from 'lucide-react';
+import { FileText, Sparkles, RefreshCw, Layers, Download, GitMerge } from 'lucide-react';
 import { generateNotesAndSummary } from '../../lib/ai/client';
 import PdfDragDropUpload from './PdfDragDropUpload';
+import MermaidRenderer from './MermaidRenderer';
 
 type Flashcard = {
   front: string;
@@ -20,18 +21,23 @@ export default function AiSummaryGenerator() {
   const [summary, setSummary] = useState('');
   const [takeaways, setTakeaways] = useState<string[]>([]);
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
+  const [mindMap, setMindMap] = useState<string | null>(null);
   const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
+  const [activeTab, setActiveTab] = useState<'notes' | 'mindmap'>('notes');
 
   const handleSummarize = async () => {
     if (!text.trim()) return;
     setLoading(true);
     setFlippedCards(new Set());
+    setMindMap(null);
+    setActiveTab('notes');
 
     try {
       const data = await generateNotesAndSummary(text, mode);
       setSummary(data.summary);
       setTakeaways(data.takeaways);
       setFlashcards(data.flashcards);
+      if (data.mindMap) setMindMap(data.mindMap);
     } catch (err) {
       console.error(err);
     } finally {
@@ -192,14 +198,43 @@ export default function AiSummaryGenerator() {
               </button>
             </div>
 
-            {/* Summary */}
-            <div className="space-y-2">
-              <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-rose-200/80 dark:border-zinc-800 shadow-sm">
-                {summary}
-              </p>
-            </div>
+            {mindMap && (
+              <div className="flex items-center gap-4 border-b border-rose-200/40 dark:border-zinc-800 pb-2 mb-4">
+                <button
+                  onClick={() => setActiveTab('notes')}
+                  className={`text-xs font-bold uppercase tracking-wider pb-2 border-b-2 transition-colors ${
+                    activeTab === 'notes' ? 'border-rose-600 text-rose-600 dark:text-rose-400' : 'border-transparent text-zinc-500'
+                  }`}
+                >
+                  Notes & Cards
+                </button>
+                <button
+                  onClick={() => setActiveTab('mindmap')}
+                  className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider pb-2 border-b-2 transition-colors ${
+                    activeTab === 'mindmap' ? 'border-rose-600 text-rose-600 dark:text-rose-400' : 'border-transparent text-zinc-500'
+                  }`}
+                >
+                  <GitMerge className="h-3.5 w-3.5" />
+                  Visual Mind Map
+                </button>
+              </div>
+            )}
 
-            {/* Bullet takeaways */}
+            {activeTab === 'mindmap' && mindMap ? (
+              <div className="space-y-2">
+                <span className="text-xs font-mono font-bold text-zinc-900 dark:text-white uppercase tracking-wider block">AI Generated Map</span>
+                <MermaidRenderer chart={mindMap} />
+              </div>
+            ) : (
+              <>
+                {/* Summary */}
+                <div className="space-y-2">
+                  <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-rose-200/80 dark:border-zinc-800 shadow-sm">
+                    {summary}
+                  </p>
+                </div>
+
+                {/* Bullet takeaways */}
             <div className="space-y-2">
               <span className="text-xs font-mono font-bold text-zinc-900 dark:text-white uppercase tracking-wider block">Key Takeaways</span>
               <ul className="space-y-2 text-xs text-zinc-700 dark:text-zinc-300">
@@ -251,7 +286,7 @@ export default function AiSummaryGenerator() {
                     );
                   })}
                 </div>
-              </div>
+              </>
             )}
           </div>
         )}

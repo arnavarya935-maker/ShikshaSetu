@@ -12,6 +12,7 @@ import MiniCalendar from '../../../components/lms/MiniCalendar';
 import { useLanguage } from '../../../lib/language/LanguageContext';
 import { motion } from 'framer-motion';
 import UserProfileCard from '../../../components/UserProfileCard';
+import ConceptExplainer from '../../../components/lms/ConceptExplainer';
 
 
 const MotionLink = motion(Link);
@@ -129,6 +130,11 @@ export default function StudentDashboardPage() {
                   </motion.div>
                 </Link>
               </div>
+            </div>
+
+            {/* AI Concept Explainer */}
+            <div className="mb-6">
+              <ConceptExplainer />
             </div>
 
             {/* Statistics and Learning Progress row */}
