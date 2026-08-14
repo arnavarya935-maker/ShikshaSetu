@@ -13,6 +13,8 @@ import { useLanguage } from '../../../lib/language/LanguageContext';
 import { motion } from 'framer-motion';
 import UserProfileCard from '../../../components/UserProfileCard';
 import ConceptExplainer from '../../../components/lms/ConceptExplainer';
+import MasteryHeatmap from '../../../components/lms/MasteryHeatmap';
+import TimeTracker from '../../../components/lms/TimeTracker';
 
 
 const MotionLink = motion(Link);
@@ -184,6 +186,12 @@ export default function StudentDashboardPage() {
                   </div>
                 </div>
               </DashboardCard>
+            </div>
+
+            {/* Assessment Analytics Row */}
+            <div className="grid gap-6 md:grid-cols-2 mt-6">
+              <MasteryHeatmap />
+              <TimeTracker />
             </div>
           </motion.div>
 
