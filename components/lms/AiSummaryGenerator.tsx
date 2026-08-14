@@ -286,12 +286,13 @@ export default function AiSummaryGenerator() {
                     );
                   })}
                 </div>
-              </>
+              </div>
             )}
-          </div>
+            </>
+          )}
+        </div>
         )}
       </div>
     </div>
   );
 }
-
