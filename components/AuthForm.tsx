@@ -36,8 +36,13 @@ export default function AuthForm({ mode }: AuthFormProps) {
       } else {
         await signIn(email, password);
       }
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Something went wrong.');
+    } catch (caughtError: any) {
+      const errorMessage = caughtError?.message || 'Something went wrong.';
+      if (errorMessage.toLowerCase().includes('rate limit')) {
+        setError('You have attempted to sign up too many times. Please wait an hour before trying again, or use another email.');
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setIsSubmitting(false);
     }
