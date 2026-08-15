@@ -21,6 +21,7 @@ type UserProfile = {
   onboardingComplete: boolean;
   title?: string;
   bio?: string;
+  streak?: number;
 };
 
 type OnboardingProfileInput = Omit<UserProfile, 'onboardingComplete'>;
