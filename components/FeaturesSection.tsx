@@ -300,6 +300,18 @@ function LargeFeatureCard({
     [40, 0, 0, index === total - 1 ? 0 : -30]
   );
 
+  const getFeatureUrl = (idx: number) => {
+    switch (idx) {
+      case 0: return '/dashboard/student/tools?tab=summary'; // AI Notes
+      case 1: return '/dashboard/student/tools?tab=quiz'; // AI Quiz
+      case 2: return '/dashboard/student/tools?tab=summary'; // PDF
+      case 3: return '/dashboard/student/tools?tab=tutor'; // Doubt
+      case 4: return '/dashboard/student/tools?tab=insights'; // Progress
+      case 5: return '/dashboard/student/tools?tab=quiz'; // Mock
+      default: return '/dashboard/student/tools';
+    }
+  };
+
   return (
     <motion.div
       style={{
@@ -344,7 +356,7 @@ function LargeFeatureCard({
           {/* Bottom Card Footer Links */}
           <div className="pt-4 flex items-center justify-between text-xs font-mono font-semibold uppercase tracking-wider text-zinc-500 border-t border-rose-200/60 dark:border-zinc-800/60">
             <span>SHIKSHASETU FEATURE</span>
-            <a href="/dashboard/student/tools" className="text-zinc-900 dark:text-white hover:text-rose-500 dark:hover:text-rose-400 transition flex items-center gap-1 font-bold">
+            <a href={getFeatureUrl(index)} className="text-zinc-900 dark:text-white hover:text-rose-500 dark:hover:text-rose-400 transition flex items-center gap-1 font-bold">
               <span>EXPLORE FEATURE</span>
               <span>→</span>
             </a>
