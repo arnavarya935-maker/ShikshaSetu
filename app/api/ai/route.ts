@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     }
 
     // Direct Gemini REST API fetch
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     if (action === 'chat') {
       const { message, history } = body;
@@ -217,7 +217,11 @@ async function callGemini(url: string, prompt: string): Promise<string> {
     }),
   });
   
-  if (!res.ok) throw new Error('Gemini API query failed');
+  if (!res.ok) {
+    const errorBody = await res.text().catch(() => 'unknown error body');
+    console.error('Gemini API Error:', res.status, errorBody);
+    throw new Error(`Gemini API query failed (${res.status}): ${res.statusText}`);
+  }
   const data = await res.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 }
