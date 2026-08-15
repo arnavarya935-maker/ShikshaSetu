@@ -187,9 +187,9 @@ export async function explainConcept(concept: string, level: string): Promise<st
     }
     const data = await res.json();
     return data.explanation;
-  } catch (err) {
+  } catch (err: any) {
     console.error('Explain API Error:', err);
-    return 'Sorry, there was an error generating the explanation. Please try again.';
+    throw new Error(err.message || 'Sorry, there was an error generating the explanation. Please try again.');
   }
 }
 

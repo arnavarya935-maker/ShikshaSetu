@@ -96,9 +96,9 @@ export default function ConceptExplainer() {
       </div>
 
       {error && (
-        <div className="flex items-start gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-left">
-          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
-          <p className="text-[11px] text-rose-200 leading-normal">{error}</p>
+        <div className="flex items-start gap-2 rounded-xl border border-rose-500/20 bg-rose-50 dark:bg-rose-500/10 p-3 text-left">
+          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
+          <p className="text-[11px] text-rose-800 dark:text-rose-200 leading-normal">{error}</p>
         </div>
       )}
 
