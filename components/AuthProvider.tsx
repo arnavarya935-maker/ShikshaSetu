@@ -168,6 +168,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       options: { data: { full_name: name } }
     });
     if (error) throw error;
+    
+    if (!data.session) {
+      throw new Error('Please check your email to verify your account before logging in.');
+    }
+    
     setUser(toCompatUser(data.user));
     router.push('/dashboard');
   };
