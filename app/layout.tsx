@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '../components/AuthProvider';
 import { LanguageProvider } from '../lib/language/LanguageContext';
+import CommandPalette from '../components/CommandPalette';
+import ScrollProgress from '../components/ScrollProgress';
 
 export const metadata: Metadata = {
   title: 'ShikshaSetu — Premium Learning Management System',
@@ -36,7 +38,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <LanguageProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <ScrollProgress />
+            <CommandPalette />
+            {children}
+          </AuthProvider>
         </LanguageProvider>
       </body>
     </html>

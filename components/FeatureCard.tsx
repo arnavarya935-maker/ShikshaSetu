@@ -1,4 +1,7 @@
+'use client';
+
 import type { LucideIcon } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 type FeatureCardProps = {
   icon: LucideIcon;
@@ -8,10 +11,14 @@ type FeatureCardProps = {
 
 export default function FeatureCard({ icon: Icon, title, description }: FeatureCardProps) {
   return (
-    <div className="group rounded-[2rem] border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/70 dark:bg-zinc-900/50 p-8 transition-all duration-300 hover:shadow-elevated hover:border-zinc-300 dark:hover:border-zinc-700 flex flex-col justify-between space-y-6">
+    <motion.div
+      whileHover={{ y: -5, scale: 1.02 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+      className="group rounded-[2rem] border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/70 dark:bg-zinc-900/50 p-8 transition-colors duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:hover:shadow-[0_8px_30px_rgba(255,255,255,0.03)] hover:border-zinc-300 dark:hover:border-zinc-700 flex flex-col justify-between space-y-6"
+    >
       <div>
         <div className="flex items-center justify-between">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-sm transition-transform duration-300 group-hover:scale-105">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-sm transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3">
             <Icon className="h-5 w-5" />
           </div>
           <span className="text-[11px] font-mono tracking-[0.2em] uppercase text-zinc-400 dark:text-zinc-500 font-medium">
@@ -31,7 +38,6 @@ export default function FeatureCard({ icon: Icon, title, description }: FeatureC
         <span>Learn more</span>
         <span>→</span>
       </div>
-    </div>
+    </motion.div>
   );
 }
-

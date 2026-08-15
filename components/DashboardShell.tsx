@@ -11,6 +11,7 @@ import DarkModeToggle from '../app/dark';
 import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
+import StreakWidget from './StreakWidget';
 
 import Logo from './Logo';
 
@@ -121,6 +122,7 @@ export default function DashboardShell({ title, subtitle, breadcrumbs, children 
           </div>
 
           <div className="hidden items-center gap-4 md:flex">
+            <StreakWidget />
             {/* Language Selector */}
             <button
               type="button"
