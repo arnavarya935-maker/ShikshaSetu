@@ -344,7 +344,7 @@ function LargeFeatureCard({
           {/* Bottom Card Footer Links */}
           <div className="pt-4 flex items-center justify-between text-xs font-mono font-semibold uppercase tracking-wider text-zinc-500 border-t border-rose-200/60 dark:border-zinc-800/60">
             <span>SHIKSHASETU FEATURE</span>
-            <a href="/signup" className="text-zinc-900 dark:text-white hover:text-rose-500 dark:hover:text-rose-400 transition flex items-center gap-1 font-bold">
+            <a href="/dashboard/student/tools" className="text-zinc-900 dark:text-white hover:text-rose-500 dark:hover:text-rose-400 transition flex items-center gap-1 font-bold">
               <span>EXPLORE FEATURE</span>
               <span>→</span>
             </a>

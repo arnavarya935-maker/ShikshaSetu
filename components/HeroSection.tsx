@@ -43,12 +43,13 @@ export default function HeroSection() {
                 <span>{t('hero_cta_start')}</span>
                 <ArrowUpRight className="h-4 w-4" />
               </a>
-              <a
-                href="#features"
+              <button
+                type="button"
+                onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
                 className="inline-flex items-center justify-center rounded-lg border border-[#DCDCDC] dark:border-zinc-800 bg-white dark:bg-zinc-900 px-6 py-3 text-xs font-medium uppercase tracking-wider text-[#171717] dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-none"
               >
                 {t('hero_cta_explore')}
-              </a>
+              </button>
             </div>
 
             {/* Highlights Row */}

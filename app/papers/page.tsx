@@ -83,6 +83,7 @@ export default function PapersPage() {
             <motion.div 
               key={paper.id}
               whileHover={{ y: -5, scale: 1.02 }}
+              onClick={() => window.open(paper.pdfUrl, '_blank')}
               className="bg-white/70 dark:bg-zinc-900/50 backdrop-blur-md border border-slate-200/50 dark:border-zinc-800/80 rounded-3xl p-6 shadow-soft hover:shadow-elevated hover:border-rose-300 dark:hover:border-rose-800 transition-all flex flex-col justify-between group cursor-pointer"
             >
               <div>
@@ -97,10 +98,10 @@ export default function PapersPage() {
               </div>
               <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-zinc-800/60">
                 <span className="text-[10px] text-zinc-400 font-semibold">{paper.downloads.toLocaleString()} Downloads</span>
-                <button className="flex items-center gap-1.5 text-xs font-bold text-rose-600 hover:text-rose-700 transition">
+                <a href={paper.pdfUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 text-xs font-bold text-rose-600 hover:text-rose-700 transition">
                   <Download className="h-4 w-4 group-hover:-translate-y-1 transition-transform" />
                   PDF
-                </button>
+                </a>
               </div>
             </motion.div>
           ))}
