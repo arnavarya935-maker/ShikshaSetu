@@ -70,10 +70,12 @@ Tutor:`;
     }
 
     if (action === 'quiz') {
-      const { topic, text } = body;
+      const { topic, text, level = 'moderate' } = body;
       const context = text || topic;
       const prompt = `You are an educational quiz generator. Generate exactly 3 multiple choice questions about the following topic or source material:
 "${context}"
+
+Difficulty level: ${level.toUpperCase()}. Make the questions appropriate for this difficulty level.
 
 Output MUST be valid JSON conforming to this TypeScript type:
 {

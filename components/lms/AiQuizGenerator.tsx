@@ -11,6 +11,7 @@ import { useLanguage } from '../../lib/language/LanguageContext';
 export default function AiQuizGenerator() {
   const [topic, setTopic] = useState('');
   const [mode, setMode] = useState<'topic' | 'pdf'>('topic');
+  const [level, setLevel] = useState<'easy' | 'moderate' | 'hard'>('moderate');
   const [extractedText, setExtractedText] = useState('');
   const [pdfFilename, setPdfFilename] = useState('');
   
@@ -33,7 +34,7 @@ export default function AiQuizGenerator() {
     setQuiz(null);
 
     try {
-      const questions = await generateAiQuiz(inputTopic, inputText);
+      const questions = await generateAiQuiz(inputTopic, inputText, level);
       if (questions && questions.length > 0) {
         const generatedQuiz: Quiz = {
           id: `ai-quiz-${Date.now()}`,
@@ -111,6 +112,26 @@ export default function AiQuizGenerator() {
                   className="w-full rounded-lg border border-[#DCDCDC] dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 outline-none focus:border-zinc-400 dark:focus:border-zinc-600"
                 />
 
+                <div className="flex flex-col gap-2">
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Difficulty Level</span>
+                  <div className="flex gap-2">
+                    {['easy', 'moderate', 'hard'].map((l) => (
+                      <button
+                        key={l}
+                        type="button"
+                        onClick={() => setLevel(l as 'easy' | 'moderate' | 'hard')}
+                        className={`flex-1 rounded-md px-3 py-2 text-xs font-semibold capitalize transition-colors border ${
+                          level === l 
+                            ? 'bg-rose-50 border-rose-200 text-rose-600 dark:bg-rose-500/10 dark:border-rose-500/30 dark:text-rose-400' 
+                            : 'bg-white border-[#DCDCDC] text-zinc-600 hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800/50'
+                        }`}
+                      >
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <button
                   type="button"
                   onClick={handleGenerate}
@@ -129,6 +150,26 @@ export default function AiQuizGenerator() {
 
               <div className="space-y-4">
                 <PdfDragDropUpload onTextExtracted={handleTextExtracted} />
+
+                <div className="flex flex-col gap-2">
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Difficulty Level</span>
+                  <div className="flex gap-2">
+                    {['easy', 'moderate', 'hard'].map((l) => (
+                      <button
+                        key={l}
+                        type="button"
+                        onClick={() => setLevel(l as 'easy' | 'moderate' | 'hard')}
+                        className={`flex-1 rounded-md px-3 py-2 text-xs font-semibold capitalize transition-colors border ${
+                          level === l 
+                            ? 'bg-rose-50 border-rose-200 text-rose-600 dark:bg-rose-500/10 dark:border-rose-500/30 dark:text-rose-400' 
+                            : 'bg-white border-[#DCDCDC] text-zinc-600 hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800/50'
+                        }`}
+                      >
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
                 <button
                   type="button"
