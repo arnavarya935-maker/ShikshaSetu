@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     }
 
     // Direct Gemini REST API fetch
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     if (action === 'chat') {
       const { message, history } = body;
