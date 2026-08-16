@@ -31,7 +31,7 @@ Welcome to **ShikshaSetu**—a next-generation, AI-driven adaptive learning plat
 - **Core Framework**: [Next.js 14](https://nextjs.org/) (App Router)
 - **Programming Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Styling & UI**: [Tailwind CSS](https://tailwindcss.com/), [Framer Motion](https://www.framer.com/motion/), [Lucide React](https://lucide.dev/)
-- **Authentication**: [Firebase Auth](https://firebase.google.com/docs/auth)
+- **Authentication**: [Supabase Auth](https://supabase.com/docs/guides/auth)
 - **Database**: [Firebase Firestore](https://firebase.google.com/docs/firestore)
 - **PDF Processing**: `pdfjs-dist`
 
