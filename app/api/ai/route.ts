@@ -139,6 +139,39 @@ Output only the JSON block. Do not write markdown tags or text around the JSON.`
       return NextResponse.json(json);
     }
 
+    if (action === 'ocr') {
+      const { imageBase64 } = body;
+      const prompt = `You are a high-accuracy OCR engine. Extract all the text from this image exactly as it is written. Preserve paragraphs and layout as much as possible. Do not include any extra conversational text.`;
+
+      const payload = {
+        contents: [{
+          parts: [
+            { text: prompt },
+            { 
+              inline_data: {
+                mime_type: "image/jpeg",
+                data: imageBase64
+              }
+            }
+          ]
+        }]
+      };
+
+      const res = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!res.ok) {
+        throw new Error('Failed to perform OCR');
+      }
+      
+      const data = await res.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      return NextResponse.json({ text });
+    }
+
     if (action === 'planner') {
       const { courseTitle, days, hours } = body;
       const prompt = `Create a weekly study timeline for course "${courseTitle}" spanning ${days} days with ${hours} hours daily commit.

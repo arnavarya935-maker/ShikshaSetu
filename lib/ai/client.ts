@@ -127,6 +127,26 @@ export async function generateExamPrepToolkit(text: string): Promise<ExamPrepRes
   }
 }
 
+export async function performOCR(imageBase64: string): Promise<string> {
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch('/api/ai', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ action: 'ocr', imageBase64 }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    return data.text || '';
+  } catch (err) {
+    console.error('OCR API Error:', err);
+    throw new Error('Failed to extract text from image.');
+  }
+}
+
 export async function generateStudyPlan(
   courseTitle: string,
   days: number,

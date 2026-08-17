@@ -5,23 +5,40 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import { 
   UploadCloud, File, Maximize2, Sparkles, Loader2, X, Library, Clock, Tag, Trash2, 
-  ChevronLeft, Volume2, Type, Minus, Plus, Play, Pause, Square, GraduationCap, Target, FileText, Lightbulb
+  ChevronLeft, Volume2, Type, Minus, Plus, Play, Pause, Square, GraduationCap, Target, FileText, Lightbulb,
+  Camera, Link as LinkIcon, Layers
 } from 'lucide-react';
 import { extractTextFromPdf } from '../../lib/utils/pdf';
-import { generateNotesAndSummary, AiSummaryResponse, generateExamPrepToolkit, ExamPrepResponse } from '../../lib/ai/client';
+import { generateNotesAndSummary, AiSummaryResponse, generateExamPrepToolkit, ExamPrepResponse, performOCR } from '../../lib/ai/client';
 import { LibraryItem, saveToLibrary, getLibrary, updateLastRead, removeFromLibrary } from '../../lib/storage/library';
+import { PDFDocument } from 'pdf-lib';
 
 export default function ReaderPage() {
   const [library, setLibrary] = useState<LibraryItem[]>([]);
   const [activeBook, setActiveBook] = useState<LibraryItem | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   
-  // Upload State
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  // Upload & Import State
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [uploadMode, setUploadMode] = useState<'single' | 'merge' | 'url' | 'camera' | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState('');
+  
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadSubject, setUploadSubject] = useState('');
+  
+  // Single/Merge Files
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mergeInputRef = useRef<HTMLInputElement>(null);
+
+  // URL Import
+  const [importUrl, setImportUrl] = useState('');
+
+  // Camera State
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
 
   // Notes State
   const [generatingNotes, setGeneratingNotes] = useState(false);
@@ -52,6 +69,9 @@ export default function ReaderPage() {
     if (typeof window !== 'undefined') {
       setSpeechSynthesis(window.speechSynthesis);
     }
+    return () => {
+      stopCamera();
+    };
   }, []);
 
   const loadLibrary = async () => {
@@ -59,34 +79,184 @@ export default function ReaderPage() {
     setLibrary(items);
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // --- Handlers for Input Modes ---
+
+  const handleSingleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && (file.type === 'application/pdf' || file.name.endsWith('.pdf'))) {
-      setUploadFile(file);
+    if (file) {
+      setSelectedFiles([file]);
       setUploadTitle(file.name.replace(/\.[^/.]+$/, ""));
-      setIsUploading(true);
-    } else {
-      alert('Currently only PDF files are fully supported in this beta version.');
+      setUploadMode('single');
+      setUploadModalOpen(true);
     }
   };
 
-  const confirmUpload = async () => {
-    if (!uploadFile) return;
-    const newItem = await saveToLibrary(uploadFile, uploadTitle, uploadSubject);
+  const handleMergeFilesSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setSelectedFiles(files);
+      setUploadTitle("Merged Document");
+      setUploadMode('merge');
+      setUploadModalOpen(true);
+    }
+  };
+
+  const processSingleUpload = async () => {
+    if (selectedFiles.length === 0) return;
+    setIsProcessing(true);
+    setProcessingStatus('Saving file...');
+    const newItem = await saveToLibrary(selectedFiles[0], uploadTitle, uploadSubject);
+    finalizeImport(newItem);
+  };
+
+  const processMergeUpload = async () => {
+    if (selectedFiles.length < 2) {
+      alert("Please select at least 2 PDF files to merge.");
+      return;
+    }
+    setIsProcessing(true);
+    setProcessingStatus('Merging PDFs...');
+    try {
+      const mergedPdf = await PDFDocument.create();
+      for (const file of selectedFiles) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await PDFDocument.load(arrayBuffer);
+        const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+        copiedPages.forEach((page) => mergedPdf.addPage(page));
+      }
+      const mergedPdfBytes = await mergedPdf.save();
+      const mergedBlob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+      const mergedFile = new File([mergedBlob], `${uploadTitle}.pdf`, { type: 'application/pdf' });
+      
+      setProcessingStatus('Saving merged document...');
+      const newItem = await saveToLibrary(mergedFile, uploadTitle, uploadSubject);
+      finalizeImport(newItem);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to merge PDFs. Ensure all selected files are valid PDFs.');
+      setIsProcessing(false);
+    }
+  };
+
+  const processUrlImport = async () => {
+    if (!importUrl) return;
+    setIsProcessing(true);
+    setProcessingStatus('Downloading file from URL...');
+    try {
+      const res = await fetch('/api/fetch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: importUrl })
+      });
+      if (!res.ok) throw new Error('Failed to fetch file. Make sure the link is public.');
+      
+      const blob = await res.blob();
+      const file = new File([blob], `${uploadTitle || 'Imported File'}.pdf`, { type: blob.type || 'application/pdf' });
+      
+      setProcessingStatus('Saving to library...');
+      const newItem = await saveToLibrary(file, uploadTitle || 'Imported File', uploadSubject);
+      finalizeImport(newItem);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'Failed to import from URL.');
+      setIsProcessing(false);
+    }
+  };
+
+  // --- Camera OCR ---
+  const startCamera = async () => {
+    setUploadMode('camera');
+    setUploadModalOpen(true);
+    setUploadTitle('Scanned Page');
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      setStream(mediaStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+    } catch (err) {
+      console.error("Camera error:", err);
+      alert("Could not access camera. Please check permissions.");
+    }
+  };
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+  };
+
+  const captureAndOCR = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    setIsProcessing(true);
+    setProcessingStatus('Capturing image...');
+    
+    const context = canvasRef.current.getContext('2d');
+    if (!context) return;
+    
+    // Set canvas dimensions to video feed
+    canvasRef.current.width = videoRef.current.videoWidth;
+    canvasRef.current.height = videoRef.current.videoHeight;
+    context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
+    
+    // Get base64 jpeg
+    const base64DataUrl = canvasRef.current.toDataURL('image/jpeg', 0.8);
+    // Remove data:image/jpeg;base64, prefix for the API
+    const base64Image = base64DataUrl.split(',')[1];
+    
+    stopCamera();
+    setProcessingStatus('AI is analyzing and extracting text...');
+    
+    try {
+      const extractedText = await performOCR(base64Image);
+      if (!extractedText) throw new Error('No text found.');
+      
+      // Create a dummy PDF or a text file. Since our reader currently expects PDFs, 
+      // we'll save it as a text file blob and handle it gracefully in the reader by jumping straight to Text Mode.
+      const blob = new Blob([extractedText], { type: 'text/plain' });
+      const file = new File([blob], `${uploadTitle}.txt`, { type: 'text/plain' });
+      
+      const newItem = await saveToLibrary(file, uploadTitle, uploadSubject);
+      finalizeImport(newItem);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to extract text from image.');
+      setIsProcessing(false);
+    }
+  };
+
+  const finalizeImport = async (newItem: LibraryItem) => {
     await loadLibrary();
-    setIsUploading(false);
-    setUploadFile(null);
-    setUploadTitle('');
-    setUploadSubject('');
+    setIsProcessing(false);
+    setUploadModalOpen(false);
+    resetUploadState();
     openBook(newItem);
   };
 
-  const cancelUpload = () => {
-    setIsUploading(false);
-    setUploadFile(null);
+  const resetUploadState = () => {
+    setUploadMode(null);
+    setSelectedFiles([]);
     setUploadTitle('');
     setUploadSubject('');
+    setImportUrl('');
+    stopCamera();
   };
+
+  const closeUploadModal = () => {
+    if (isProcessing) return;
+    setUploadModalOpen(false);
+    resetUploadState();
+  };
+
+  const executeUpload = () => {
+    if (uploadMode === 'single') processSingleUpload();
+    else if (uploadMode === 'merge') processMergeUpload();
+    else if (uploadMode === 'url') processUrlImport();
+    else if (uploadMode === 'camera') captureAndOCR();
+  };
+
+  // --- Reader Functions ---
 
   const openBook = async (book: LibraryItem) => {
     await updateLastRead(book.id);
@@ -100,8 +270,16 @@ export default function ReaderPage() {
     setExamPrepData(null);
     setShowExamPrep(false);
     
-    setIsTextMode(false);
-    setExtractedText(null);
+    // If it's a plain text file (like our OCR result), default to text mode immediately
+    if (book.fileType === 'text/plain') {
+      setIsTextMode(true);
+      const text = await book.blob.text();
+      setExtractedText(text);
+    } else {
+      setIsTextMode(false);
+      setExtractedText(null);
+    }
+    
     stopSpeech();
     await loadLibrary();
   };
@@ -121,7 +299,7 @@ export default function ReaderPage() {
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (confirm('Are you sure you want to delete this book?')) {
+    if (confirm('Are you sure you want to delete this item?')) {
       await removeFromLibrary(id);
       await loadLibrary();
     }
@@ -129,6 +307,7 @@ export default function ReaderPage() {
 
   const toggleTextMode = async () => {
     if (isTextMode) {
+      if (activeBook?.fileType === 'text/plain') return; // Cannot exit text mode for plain text files
       setIsTextMode(false);
       stopSpeech();
       return;
@@ -184,18 +363,19 @@ export default function ReaderPage() {
 
   const handleGenerateNotes = async () => {
     if (!activeBook) return;
-    setShowExamPrep(false); // Close other panel
+    setShowExamPrep(false);
     setGeneratingNotes(true);
     setShowNotes(true);
-    setNotesStatus('Extracting text from PDF...');
+    setNotesStatus('Extracting text...');
     
     try {
       let text = extractedText;
       if (!text) {
-        text = await extractTextFromPdf(activeBook.blob, setNotesStatus);
+        if (activeBook.fileType === 'text/plain') text = await activeBook.blob.text();
+        else text = await extractTextFromPdf(activeBook.blob, setNotesStatus);
         setExtractedText(text);
       }
-      if (text.length < 20) throw new Error('Not enough text extracted from the PDF.');
+      if (text.length < 20) throw new Error('Not enough text extracted.');
       
       setNotesStatus('Synthesizing detailed notes with AI...');
       const data = await generateNotesAndSummary(text, 'detailed');
@@ -212,18 +392,19 @@ export default function ReaderPage() {
 
   const handleGenerateExamPrep = async () => {
     if (!activeBook) return;
-    setShowNotes(false); // Close other panel
+    setShowNotes(false);
     setGeneratingExamPrep(true);
     setShowExamPrep(true);
-    setNotesStatus('Extracting text for Exam Prep...');
+    setNotesStatus('Extracting text...');
     
     try {
       let text = extractedText;
       if (!text) {
-        text = await extractTextFromPdf(activeBook.blob, setNotesStatus);
+        if (activeBook.fileType === 'text/plain') text = await activeBook.blob.text();
+        else text = await extractTextFromPdf(activeBook.blob, setNotesStatus);
         setExtractedText(text);
       }
-      if (text.length < 20) throw new Error('Not enough text extracted from the PDF.');
+      if (text.length < 20) throw new Error('Not enough text extracted.');
       
       setNotesStatus('Analyzing content for high-yield exam topics...');
       const data = await generateExamPrepToolkit(text);
@@ -252,35 +433,109 @@ export default function ReaderPage() {
       <Navbar />
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-10 mt-16 flex flex-col relative z-10">
         
-        {isUploading && (
+        {/* Unified Upload & Import Modal */}
+        {uploadModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 w-full max-w-md shadow-2xl border border-slate-200 dark:border-zinc-800">
-              <h3 className="text-lg font-bold mb-4 text-slate-900 dark:text-white">Add to Library</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Title</label>
-                  <input 
-                    type="text" 
-                    value={uploadTitle}
-                    onChange={(e) => setUploadTitle(e.target.value)}
-                    className="w-full bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm outline-none focus:border-rose-500 transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Subject / Tag (Optional)</label>
-                  <input 
-                    type="text" 
-                    value={uploadSubject}
-                    onChange={(e) => setUploadSubject(e.target.value)}
-                    placeholder="e.g. Physics, Math, History..."
-                    className="w-full bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm outline-none focus:border-rose-500 transition-colors"
-                  />
-                </div>
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 w-full max-w-lg shadow-2xl border border-slate-200 dark:border-zinc-800 flex flex-col max-h-[90vh]">
+              
+              <div className="flex items-center justify-between mb-6 border-b border-slate-100 dark:border-zinc-800 pb-4">
+                <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">
+                  {uploadMode === 'single' && 'Add to Library'}
+                  {uploadMode === 'merge' && 'Merge PDFs'}
+                  {uploadMode === 'url' && 'Import from Link'}
+                  {uploadMode === 'camera' && 'Scan Page'}
+                </h3>
+                {!isProcessing && (
+                  <button onClick={closeUploadModal} className="p-1 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full text-slate-400">
+                    <X className="h-5 w-5" />
+                  </button>
+                )}
               </div>
-              <div className="flex gap-3 mt-6 justify-end">
-                <button onClick={cancelUpload} className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Cancel</button>
-                <button onClick={confirmUpload} className="px-4 py-2 text-sm font-semibold bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors shadow-sm">Save & Open</button>
-              </div>
+
+              {isProcessing ? (
+                <div className="flex flex-col items-center justify-center py-12 text-slate-500">
+                  <Loader2 className="h-12 w-12 animate-spin text-rose-500 mb-4" />
+                  <p className="font-semibold text-sm">{processingStatus}</p>
+                </div>
+              ) : (
+                <div className="space-y-5 overflow-y-auto scrollbar-hide">
+                  
+                  {uploadMode === 'camera' ? (
+                    <div className="rounded-xl overflow-hidden bg-black aspect-[3/4] sm:aspect-video relative border border-slate-200 dark:border-zinc-800">
+                      <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                      <canvas ref={canvasRef} className="hidden" />
+                      <div className="absolute inset-0 border-2 border-rose-500/50 m-8 rounded-lg pointer-events-none"></div>
+                      <p className="absolute bottom-4 left-0 right-0 text-center text-white/70 text-xs font-semibold drop-shadow-md">
+                        Align page within the frame
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {uploadMode === 'url' && (
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-500 mb-1">Public Document Link (e.g., Google Drive)</label>
+                          <input 
+                            type="url" 
+                            value={importUrl}
+                            onChange={(e) => setImportUrl(e.target.value)}
+                            placeholder="https://..."
+                            className="w-full bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-rose-500 transition-colors"
+                          />
+                        </div>
+                      )}
+
+                      {uploadMode === 'merge' && selectedFiles.length > 0 && (
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-500 mb-2">Files to Merge ({selectedFiles.length})</label>
+                          <div className="space-y-2 max-h-32 overflow-y-auto p-2 bg-slate-50 dark:bg-zinc-950 rounded-lg border border-slate-200 dark:border-zinc-800">
+                            {selectedFiles.map((f, i) => (
+                              <div key={i} className="flex items-center gap-2 text-xs text-slate-600 dark:text-zinc-400">
+                                <File className="h-3 w-3 shrink-0" /> <span className="truncate">{f.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-500 mb-1">Document Title</label>
+                          <input 
+                            type="text" 
+                            value={uploadTitle}
+                            onChange={(e) => setUploadTitle(e.target.value)}
+                            className="w-full bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm outline-none focus:border-rose-500 transition-colors"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-500 mb-1">Subject (Optional)</label>
+                          <input 
+                            type="text" 
+                            value={uploadSubject}
+                            onChange={(e) => setUploadSubject(e.target.value)}
+                            placeholder="e.g. Physics..."
+                            className="w-full bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm outline-none focus:border-rose-500 transition-colors"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {!isProcessing && (
+                <div className="flex gap-3 mt-8 justify-end pt-4 border-t border-slate-100 dark:border-zinc-800">
+                  <button onClick={closeUploadModal} className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Cancel</button>
+                  <button 
+                    onClick={executeUpload} 
+                    className="px-5 py-2 text-sm font-bold bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors shadow-sm flex items-center gap-2"
+                  >
+                    {uploadMode === 'camera' ? <Camera className="h-4 w-4" /> : <UploadCloud className="h-4 w-4" />}
+                    {uploadMode === 'camera' ? 'Capture & Extract' : 'Save to Library'}
+                  </button>
+                </div>
+              )}
+
             </div>
           </div>
         )}
@@ -288,12 +543,20 @@ export default function ReaderPage() {
         <input 
           type="file" 
           ref={fileInputRef}
-          onChange={handleFileSelect}
+          onChange={handleSingleFileSelect}
           accept="application/pdf,application/epub+zip,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           className="hidden"
         />
+        <input 
+          type="file" 
+          multiple
+          ref={mergeInputRef}
+          onChange={handleMergeFilesSelect}
+          accept="application/pdf"
+          className="hidden"
+        />
 
-        {activeBook && pdfUrl ? (
+        {activeBook && (pdfUrl || activeBook.fileType === 'text/plain') ? (
           <>
             <header className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
@@ -308,23 +571,25 @@ export default function ReaderPage() {
                     {activeBook.title}
                   </h1>
                   <p className="text-xs text-rose-600 dark:text-rose-400 mt-1 font-semibold bg-rose-50 dark:bg-rose-500/10 inline-block px-2 py-0.5 rounded-md">
-                    {activeBook.subject}
+                    {activeBook.subject || 'Uncategorized'}
                   </p>
                 </div>
               </div>
               
               <div className="flex flex-wrap gap-2">
-                <button 
-                  onClick={toggleTextMode}
-                  className={`flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-lg transition-colors border ${
-                    isTextMode 
-                      ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800' 
-                      : 'bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 border-slate-200 dark:border-zinc-800 hover:border-indigo-500 hover:text-indigo-600'
-                  }`}
-                >
-                  <Type className="h-4 w-4" />
-                  {isTextMode ? 'Exit Text Mode' : 'Accessible Text Mode'}
-                </button>
+                {activeBook.fileType !== 'text/plain' && (
+                  <button 
+                    onClick={toggleTextMode}
+                    className={`flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-lg transition-colors border ${
+                      isTextMode 
+                        ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800' 
+                        : 'bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 border-slate-200 dark:border-zinc-800 hover:border-indigo-500 hover:text-indigo-600'
+                    }`}
+                  >
+                    <Type className="h-4 w-4" />
+                    {isTextMode ? 'Exit Text Mode' : 'Accessible Text Mode'}
+                  </button>
+                )}
 
                 {!examPrepData && !generatingExamPrep && (
                   <button 
@@ -392,7 +657,7 @@ export default function ReaderPage() {
 
               <div className="flex-1 flex flex-row overflow-hidden relative">
                 <div className="flex-1 relative flex flex-col h-full border-r border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#090505] overflow-hidden">
-                  {!isTextMode ? (
+                  {!isTextMode && activeBook.fileType !== 'text/plain' && pdfUrl ? (
                     <iframe 
                       src={`${pdfUrl}#toolbar=0&navpanes=0`} 
                       className="w-full h-full min-h-[600px] border-none"
@@ -404,7 +669,7 @@ export default function ReaderPage() {
                       {isExtractingText ? (
                         <div className="h-full flex flex-col items-center justify-center text-slate-500">
                           <Loader2 className="h-10 w-10 animate-spin text-indigo-500 mb-4" />
-                          <p>Extracting text for accessibility mode...</p>
+                          <p>Preparing document...</p>
                         </div>
                       ) : (
                         <div 
@@ -440,7 +705,6 @@ export default function ReaderPage() {
                       ) : examPrepData ? (
                         <div className="space-y-8">
                           
-                          {/* High Yield Topics */}
                           <div>
                             <h3 className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-3 flex items-center gap-2 border-b border-slate-100 dark:border-zinc-800 pb-2">
                               <Target className="h-4 w-4" /> High-Yield Topics
@@ -455,7 +719,6 @@ export default function ReaderPage() {
                             </div>
                           </div>
 
-                          {/* Cheat Sheet */}
                           <div>
                             <h3 className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-3 flex items-center gap-2 border-b border-slate-100 dark:border-zinc-800 pb-2">
                               <FileText className="h-4 w-4" /> Formulas & Cheat Sheet
@@ -480,7 +743,6 @@ export default function ReaderPage() {
                             </div>
                           </div>
 
-                          {/* Sample Questions */}
                           <div>
                             <h3 className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-2 border-b border-slate-100 dark:border-zinc-800 pb-2">
                               <Lightbulb className="h-4 w-4" /> Mock Past-Paper Questions
@@ -580,13 +842,37 @@ export default function ReaderPage() {
                   All your files stay on your device for privacy.
                 </p>
               </div>
-              <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 text-sm font-bold bg-rose-600 text-white px-5 py-2.5 rounded-xl hover:bg-rose-700 transition-colors shadow-sm shadow-rose-500/20"
-              >
-                <UploadCloud className="h-4 w-4" />
-                Upload New
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2 text-sm font-bold bg-white dark:bg-zinc-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-zinc-800 px-5 py-2.5 rounded-xl hover:border-rose-400 transition-colors shadow-sm"
+                  title="Upload a single PDF"
+                >
+                  <File className="h-4 w-4" />
+                  Upload
+                </button>
+                <button 
+                  onClick={() => { setUploadMode('url'); setUploadModalOpen(true); }}
+                  className="flex items-center justify-center p-2.5 bg-white dark:bg-zinc-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-zinc-800 rounded-xl hover:border-rose-400 transition-colors shadow-sm"
+                  title="Import from URL (e.g. Google Drive)"
+                >
+                  <LinkIcon className="h-4 w-4" />
+                </button>
+                <button 
+                  onClick={() => mergeInputRef.current?.click()}
+                  className="flex items-center justify-center p-2.5 bg-white dark:bg-zinc-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-zinc-800 rounded-xl hover:border-rose-400 transition-colors shadow-sm"
+                  title="Merge multiple PDFs into one book"
+                >
+                  <Layers className="h-4 w-4" />
+                </button>
+                <button 
+                  onClick={startCamera}
+                  className="flex items-center gap-2 text-sm font-bold bg-rose-600 text-white px-5 py-2.5 rounded-xl hover:bg-rose-700 transition-colors shadow-sm shadow-rose-500/20"
+                >
+                  <Camera className="h-4 w-4" />
+                  Scan Page
+                </button>
+              </div>
             </header>
 
             {library.length === 0 ? (
@@ -596,7 +882,7 @@ export default function ReaderPage() {
                 </div>
                 <h2 className="text-xl font-bold text-slate-700 dark:text-slate-200 mb-2">Your library is empty</h2>
                 <p className="text-sm text-slate-500 max-w-sm">
-                  Upload PDFs to start building your personal, privacy-first library. Everything stays on your device.
+                  Upload PDFs, merge chapters, import from links, or scan physical pages to build your library.
                 </p>
               </div>
             ) : (
@@ -614,7 +900,11 @@ export default function ReaderPage() {
                           className="bg-white/70 dark:bg-zinc-900/70 border border-slate-200 dark:border-zinc-800 p-4 rounded-2xl cursor-pointer hover:border-rose-400 hover:shadow-lg transition-all group"
                         >
                           <div className="h-32 bg-slate-100 dark:bg-zinc-950 rounded-xl mb-3 flex items-center justify-center group-hover:bg-rose-50 dark:group-hover:bg-rose-500/5 transition-colors">
-                            <File className="h-8 w-8 text-slate-300 dark:text-zinc-700 group-hover:text-rose-400 transition-colors" />
+                            {book.fileType === 'text/plain' ? (
+                              <Type className="h-8 w-8 text-slate-300 dark:text-zinc-700 group-hover:text-rose-400 transition-colors" />
+                            ) : (
+                              <File className="h-8 w-8 text-slate-300 dark:text-zinc-700 group-hover:text-rose-400 transition-colors" />
+                            )}
                           </div>
                           <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate">{book.title}</h3>
                           <p className="text-xs text-slate-500 mt-1 truncate">{book.subject}</p>
@@ -664,13 +954,14 @@ export default function ReaderPage() {
                           >
                             <div className="flex items-start justify-between mb-3">
                               <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 px-2 py-1 rounded-md flex items-center gap-1">
-                                <Tag className="h-3 w-3" /> {book.subject}
+                                <Tag className="h-3 w-3" /> {book.subject || 'Uncategorized'}
                               </span>
                             </div>
                             <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 line-clamp-2 leading-tight mb-2 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
                               {book.title}
                             </h3>
-                            <p className="text-[10px] text-slate-400">
+                            <p className="text-[10px] text-slate-400 flex items-center gap-1">
+                              {book.fileType === 'text/plain' ? <Camera className="h-3 w-3" /> : <File className="h-3 w-3" />}
                               Added {new Date(book.addedAt).toLocaleDateString()}
                             </p>
                           </div>
