@@ -7,7 +7,7 @@ export const courses: Course[] = [
     title: 'Introduction to Modern Web Development',
     description: 'Learn the fundamentals of HTML, CSS, JavaScript, and build your very first fully responsive website from scratch.',
     longDescription: 'This comprehensive course is designed for absolute beginners who want to build a solid foundation in web technologies. We start with the basics of semantic HTML, progress to modern CSS layouts including Flexbox and Grid, explore programming concepts with JavaScript, and deploy a responsive personal project to the web.',
-    thumbnail: 'url(https://img.youtube.com/vi/kUMe1FH4CHE/maxresdefault.jpg) center/cover no-repeat',
+    thumbnail: 'url(https://img.youtube.com/vi/kUMe1FH4CHE/0.jpg) center/cover no-repeat',
     category: 'Programming',
     tags: ['HTML', 'CSS', 'JavaScript', 'Web Design'],
     instructor: {
@@ -58,7 +58,7 @@ export const courses: Course[] = [
     title: 'Mastering AI & Machine Learning',
     description: 'Dive deep into supervised learning, neural networks, computer vision, and NLP with real-world project portfolios.',
     longDescription: 'Go from the core math behind classification algorithms to deploying deep learning networks using PyTorch. This intermediate course bridges standard python data analysis with deep learning models, training pipelines, fine-tuning, and model evaluations.',
-    thumbnail: 'url(https://img.youtube.com/vi/tPYj3fFJGjk/maxresdefault.jpg) center/cover no-repeat',
+    thumbnail: 'url(https://img.youtube.com/vi/tPYj3fFJGjk/0.jpg) center/cover no-repeat',
     category: 'Data Science',
     tags: ['Machine Learning', 'Python', 'PyTorch', 'Neural Networks'],
     instructor: {
@@ -106,7 +106,7 @@ export const courses: Course[] = [
     title: 'Advanced Next.js & React Architecture',
     description: 'Master server actions, routing optimization, edge runtimes, caching layers, and high-performance server structures.',
     longDescription: 'Elevate your Next.js knowledge. Dive deep into React Server Components (RSC), partial pre-rendering (PPR), Next.js caching layers, Edge and Serverless runtimes, custom middleware architectures, type-safe API patterns, and database connections.',
-    thumbnail: 'url(https://img.youtube.com/vi/RqdQA36ZNSM/maxresdefault.jpg) center/cover no-repeat',
+    thumbnail: 'url(https://img.youtube.com/vi/RqdQA36ZNSM/0.jpg) center/cover no-repeat',
     category: 'Programming',
     tags: ['React', 'Next.js', 'TypeScript', 'Performance'],
     instructor: {
@@ -153,7 +153,7 @@ export const courses: Course[] = [
     title: 'Computer Science Fundamentals',
     description: 'Master the core concepts with interactive lessons, algorithms, and real-world data structures.',
     longDescription: 'This course teaches you how to think like a programmer. We will cover fundamental data structures (arrays, linked lists, trees, graphs) and algorithms (sorting, searching, dynamic programming) essential for computer science and technical interviews.',
-    thumbnail: 'url(https://img.youtube.com/vi/zOjov-2OZ0E/maxresdefault.jpg) center/cover no-repeat',
+    thumbnail: 'url(https://img.youtube.com/vi/zOjov-2OZ0E/0.jpg) center/cover no-repeat',
     category: 'Programming',
     tags: ['Algorithms', 'Data Structures', 'CS50', 'Logic'],
     instructor: {
@@ -201,7 +201,7 @@ export const courses: Course[] = [
     title: 'Advanced Mathematics',
     description: 'Deep dive into calculus, linear algebra, and discrete mathematics for science and engineering.',
     longDescription: 'This comprehensive math course bridges the gap between high school calculus and university-level engineering mathematics. Topics include multivariable calculus, matrix transformations, eigenvalues, and differential equations.',
-    thumbnail: 'url(https://img.youtube.com/vi/yq2v2Tz6Y_c/hqdefault.jpg) center/cover no-repeat',
+    thumbnail: 'url(https://img.youtube.com/vi/yq2v2Tz6Y_c/0.jpg) center/cover no-repeat',
     category: 'Mathematics',
     tags: ['Calculus', 'Algebra', 'Engineering', 'Math'],
     instructor: {
@@ -249,7 +249,7 @@ export const courses: Course[] = [
     title: 'Business & Entrepreneurship',
     description: 'Learn the fundamentals of starting a company, managing finances, and scaling a startup.',
     longDescription: 'From ideation to IPO, this course covers the essential frameworks of modern business. Learn how to construct a lean business model, pitch to investors, manage cash flow, and lead a high-performing team in competitive markets.',
-    thumbnail: 'url(https://img.youtube.com/vi/8jWQpb2-m0I/maxresdefault.jpg) center/cover no-repeat',
+    thumbnail: 'url(https://img.youtube.com/vi/8jWQpb2-m0I/0.jpg) center/cover no-repeat',
     category: 'Business',
     tags: ['Startup', 'Finance', 'Leadership', 'Management'],
     instructor: {
@@ -297,7 +297,7 @@ export const courses: Course[] = [
     title: 'UI/UX Design Basics',
     description: 'Master Figma and learn the principles of beautiful, user-centric interface design.',
     longDescription: 'This course teaches you how to design products that users love. You will learn the fundamentals of typography, color theory, layout grids, and wireframing, all while mastering Figma as your primary design tool.',
-    thumbnail: 'url(https://img.youtube.com/vi/c9Wg6Cb_YlU/maxresdefault.jpg) center/cover no-repeat',
+    thumbnail: 'url(https://img.youtube.com/vi/c9Wg6Cb_YlU/0.jpg) center/cover no-repeat',
     category: 'Design',
     tags: ['Figma', 'UI Design', 'UX Research', 'Creative'],
     instructor: {
@@ -345,7 +345,7 @@ export const courses: Course[] = [
     title: 'Spanish for Beginners',
     description: 'Learn conversational Spanish quickly with interactive dialogue and pronunciation exercises.',
     longDescription: 'Whether you are traveling to Spain or Latin America, this course will teach you the essential vocabulary, grammar, and conversational phrases to confidently speak with locals and navigate daily life.',
-    thumbnail: 'url(https://img.youtube.com/vi/8z9Z_4P0Q2Q/maxresdefault.jpg) center/cover no-repeat',
+    thumbnail: 'url(https://img.youtube.com/vi/8z9Z_4P0Q2Q/0.jpg) center/cover no-repeat',
     category: 'Language',
     tags: ['Spanish', 'Language', 'Travel', 'Communication'],
     instructor: {
