@@ -104,8 +104,11 @@ export default function HeroSection() {
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#171717] text-white dark:bg-white dark:text-zinc-900 text-xs mt-1">
                     <Sparkles className="h-3.5 w-3.5" />
                   </div>
-                  <div className="max-w-[85%] rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 px-4 py-3 text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">
-                    Sure! Your course completion increased by 14% this week. I generated 3 practice quizzes and customized flashcards for your upcoming exam.
+                  <div className="max-w-[85%] rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 p-4 shadow-sm">
+                    <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed mb-3">
+                      Sure! Your course completion increased by 14% this week. I generated 3 practice quizzes and customized flashcards for your upcoming exam.
+                    </p>
+                    <img src="https://loremflickr.com/400/200/dashboard,chart?lock=55" className="w-full h-32 object-cover rounded-lg border border-zinc-100 dark:border-zinc-800" alt="Generated Progress Chart" />
                   </div>
                 </div>
               </div>

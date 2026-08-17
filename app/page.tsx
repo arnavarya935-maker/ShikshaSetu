@@ -212,8 +212,16 @@ export default function HomePage() {
 
       {/* Newsletter / CTA Section */}
       <AnimatedSection id="newsletter" className="px-6 py-20 sm:px-10 lg:px-16">
-        <div className="mx-auto max-w-5xl rounded-[2.5rem] border border-zinc-200/90 dark:border-zinc-800/80 bg-zinc-50/80 dark:bg-zinc-900/40 p-8 sm:p-12 shadow-elevated">
-          <NewsletterForm />
+        <div className="mx-auto max-w-5xl rounded-[2.5rem] border border-zinc-200/90 dark:border-zinc-800/80 bg-zinc-50/80 dark:bg-zinc-900/40 overflow-hidden shadow-elevated">
+          <div className="grid md:grid-cols-2">
+            <div className="p-8 sm:p-12 flex flex-col justify-center">
+              <NewsletterForm />
+            </div>
+            <div className="hidden md:block relative bg-zinc-200 dark:bg-zinc-800">
+              <img src="https://loremflickr.com/800/800/students,learning?lock=66" className="w-full h-full object-cover" alt="Students Learning" />
+              <div className="absolute inset-0 bg-gradient-to-l from-transparent to-zinc-50/80 dark:to-zinc-900/40" />
+            </div>
+          </div>
         </div>
       </AnimatedSection>
 
