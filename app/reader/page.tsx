@@ -343,7 +343,7 @@ export default function ReaderPage() {
                   {!isTextMode ? (
                     <iframe 
                       src={`${pdfUrl}#toolbar=0&navpanes=0`} 
-                      className="w-full h-full flex-1"
+                      className="absolute inset-0 w-full h-full border-none"
                       title="PDF Reader"
                     />
                   ) : (
