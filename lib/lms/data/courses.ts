@@ -201,7 +201,7 @@ export const courses: Course[] = [
     title: 'Advanced Mathematics',
     description: 'Deep dive into calculus, linear algebra, and discrete mathematics for science and engineering.',
     longDescription: 'This comprehensive math course bridges the gap between high school calculus and university-level engineering mathematics. Topics include multivariable calculus, matrix transformations, eigenvalues, and differential equations.',
-    thumbnail: 'url(https://img.youtube.com/vi/yq2v2Tz6Y_c/0.jpg) center/cover no-repeat',
+    thumbnail: 'url(https://img.youtube.com/vi/S3U-Jt6lM5Q/0.jpg) center/cover no-repeat',
     category: 'Mathematics',
     tags: ['Calculus', 'Algebra', 'Engineering', 'Math'],
     instructor: {
@@ -235,7 +235,7 @@ export const courses: Course[] = [
             title: 'Limits and Derivatives in 3D',
             type: 'video',
             duration: 35,
-            videoUrl: 'https://www.youtube.com/embed/yq2v2Tz6Y_c',
+            videoUrl: 'https://www.youtube.com/embed/S3U-Jt6lM5Q',
             content: 'An introduction to functions of multiple variables, partial derivatives, and gradient vectors.',
             resources: []
           }
