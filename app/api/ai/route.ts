@@ -116,6 +116,29 @@ Output only the JSON block. Do not write markdown tags or text around the JSON.`
       return NextResponse.json(json);
     }
 
+    if (action === 'exam_prep') {
+      const { text } = body;
+      const prompt = `You are an expert academic tutor analyzing a textbook chapter or study material for exam preparation.
+Based on the following text:
+"${text}"
+
+1. Extract the most important formulas, definitions, and theorems.
+2. Identify the top 3 high-frequency exam topics from this text.
+3. Generate 3 sample past-paper style questions directly related to this text, and cross-link them to the concepts found in the text.
+
+Output MUST be valid JSON conforming to this TypeScript type:
+{
+  formulas: Array<{ term: string; definition: string }>;
+  importantTopics: Array<{ topic: string; reason: string }>;
+  sampleQuestions: Array<{ question: string; relatedTopic: string; answerHint: string }>;
+}
+Output only the JSON block. Do not write markdown tags or text around the JSON.`;
+
+      const responseText = await callGemini(geminiUrl, prompt);
+      const json = cleanAndParseJson(responseText);
+      return NextResponse.json(json);
+    }
+
     if (action === 'planner') {
       const { courseTitle, days, hours } = body;
       const prompt = `Create a weekly study timeline for course "${courseTitle}" spanning ${days} days with ${hours} hours daily commit.

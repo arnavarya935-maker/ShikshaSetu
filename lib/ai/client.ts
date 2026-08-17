@@ -102,6 +102,31 @@ export async function generateNotesAndSummary(text: string, mode: 'summary' | 'd
   }
 }
 
+export type ExamPrepResponse = {
+  formulas: { term: string; definition: string }[];
+  importantTopics: { topic: string; reason: string }[];
+  sampleQuestions: { question: string; relatedTopic: string; answerHint: string }[];
+};
+
+export async function generateExamPrepToolkit(text: string): Promise<ExamPrepResponse> {
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch('/api/ai', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ action: 'exam_prep', text }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${res.status}`);
+    }
+    return await res.json();
+  } catch (err) {
+    console.error('Exam Prep API Error:', err);
+    return { formulas: [], importantTopics: [], sampleQuestions: [] };
+  }
+}
+
 export async function generateStudyPlan(
   courseTitle: string,
   days: number,

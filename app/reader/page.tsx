@@ -5,10 +5,10 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import { 
   UploadCloud, File, Maximize2, Sparkles, Loader2, X, Library, Clock, Tag, Trash2, 
-  ChevronLeft, Volume2, Type, Minus, Plus, Play, Pause, Square
+  ChevronLeft, Volume2, Type, Minus, Plus, Play, Pause, Square, GraduationCap, Target, FileText, Lightbulb
 } from 'lucide-react';
 import { extractTextFromPdf } from '../../lib/utils/pdf';
-import { generateNotesAndSummary, AiSummaryResponse } from '../../lib/ai/client';
+import { generateNotesAndSummary, AiSummaryResponse, generateExamPrepToolkit, ExamPrepResponse } from '../../lib/ai/client';
 import { LibraryItem, saveToLibrary, getLibrary, updateLastRead, removeFromLibrary } from '../../lib/storage/library';
 
 export default function ReaderPage() {
@@ -28,6 +28,11 @@ export default function ReaderPage() {
   const [notesStatus, setNotesStatus] = useState('');
   const [notesData, setNotesData] = useState<AiSummaryResponse | null>(null);
   const [showNotes, setShowNotes] = useState(false);
+
+  // Exam Prep State
+  const [generatingExamPrep, setGeneratingExamPrep] = useState(false);
+  const [examPrepData, setExamPrepData] = useState<ExamPrepResponse | null>(null);
+  const [showExamPrep, setShowExamPrep] = useState(false);
 
   // Accessibility & Multi-format State
   const [isTextMode, setIsTextMode] = useState(false);
@@ -56,7 +61,6 @@ export default function ReaderPage() {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    // Support PDF, docx, epub based on plan
     if (file && (file.type === 'application/pdf' || file.name.endsWith('.pdf'))) {
       setUploadFile(file);
       setUploadTitle(file.name.replace(/\.[^/.]+$/, ""));
@@ -89,8 +93,13 @@ export default function ReaderPage() {
     const url = URL.createObjectURL(book.blob);
     setPdfUrl(url);
     setActiveBook(book);
+    
+    // Reset sidebars
     setNotesData(null);
     setShowNotes(false);
+    setExamPrepData(null);
+    setShowExamPrep(false);
+    
     setIsTextMode(false);
     setExtractedText(null);
     stopSpeech();
@@ -103,6 +112,8 @@ export default function ReaderPage() {
     setActiveBook(null);
     setNotesData(null);
     setShowNotes(false);
+    setExamPrepData(null);
+    setShowExamPrep(false);
     setIsTextMode(false);
     setExtractedText(null);
     stopSpeech();
@@ -131,7 +142,7 @@ export default function ReaderPage() {
     if (!activeBook) return;
     
     setIsExtractingText(true);
-    setIsTextMode(true); // Switch early to show loading state
+    setIsTextMode(true);
     try {
       const text = await extractTextFromPdf(activeBook.blob);
       setExtractedText(text);
@@ -144,7 +155,6 @@ export default function ReaderPage() {
     }
   };
 
-  // --- TTS ---
   const playSpeech = () => {
     if (!speechSynthesis || !extractedText) return;
     
@@ -152,7 +162,7 @@ export default function ReaderPage() {
       speechSynthesis.resume();
       setIsPlaying(true);
     } else {
-      stopSpeech(); // Reset if already playing something else
+      stopSpeech();
       const utterance = new SpeechSynthesisUtterance(extractedText);
       utterance.onend = () => setIsPlaying(false);
       speechSynthesis.speak(utterance);
@@ -174,6 +184,7 @@ export default function ReaderPage() {
 
   const handleGenerateNotes = async () => {
     if (!activeBook) return;
+    setShowExamPrep(false); // Close other panel
     setGeneratingNotes(true);
     setShowNotes(true);
     setNotesStatus('Extracting text from PDF...');
@@ -182,12 +193,10 @@ export default function ReaderPage() {
       let text = extractedText;
       if (!text) {
         text = await extractTextFromPdf(activeBook.blob, setNotesStatus);
-        setExtractedText(text); // Cache it
+        setExtractedText(text);
       }
+      if (text.length < 20) throw new Error('Not enough text extracted from the PDF.');
       
-      if (text.length < 20) {
-        throw new Error('Not enough text extracted from the PDF.');
-      }
       setNotesStatus('Synthesizing detailed notes with AI...');
       const data = await generateNotesAndSummary(text, 'detailed');
       setNotesData(data);
@@ -197,6 +206,34 @@ export default function ReaderPage() {
       setShowNotes(false);
     } finally {
       setGeneratingNotes(false);
+      setNotesStatus('');
+    }
+  };
+
+  const handleGenerateExamPrep = async () => {
+    if (!activeBook) return;
+    setShowNotes(false); // Close other panel
+    setGeneratingExamPrep(true);
+    setShowExamPrep(true);
+    setNotesStatus('Extracting text for Exam Prep...');
+    
+    try {
+      let text = extractedText;
+      if (!text) {
+        text = await extractTextFromPdf(activeBook.blob, setNotesStatus);
+        setExtractedText(text);
+      }
+      if (text.length < 20) throw new Error('Not enough text extracted from the PDF.');
+      
+      setNotesStatus('Analyzing content for high-yield exam topics...');
+      const data = await generateExamPrepToolkit(text);
+      setExamPrepData(data);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'Error generating exam prep toolkit.');
+      setShowExamPrep(false);
+    } finally {
+      setGeneratingExamPrep(false);
       setNotesStatus('');
     }
   };
@@ -215,7 +252,6 @@ export default function ReaderPage() {
       <Navbar />
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-10 mt-16 flex flex-col relative z-10">
         
-        {/* Upload Modal */}
         {isUploading && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 w-full max-w-md shadow-2xl border border-slate-200 dark:border-zinc-800">
@@ -257,7 +293,6 @@ export default function ReaderPage() {
           className="hidden"
         />
 
-        {/* READER VIEW */}
         {activeBook && pdfUrl ? (
           <>
             <header className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -291,6 +326,25 @@ export default function ReaderPage() {
                   {isTextMode ? 'Exit Text Mode' : 'Accessible Text Mode'}
                 </button>
 
+                {!examPrepData && !generatingExamPrep && (
+                  <button 
+                    onClick={handleGenerateExamPrep}
+                    className="flex items-center gap-2 text-xs font-bold bg-emerald-600 text-white border border-emerald-600 px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
+                  >
+                    <GraduationCap className="h-4 w-4" />
+                    Exam Prep Toolkit
+                  </button>
+                )}
+                {examPrepData && !showExamPrep && (
+                  <button 
+                    onClick={() => { setShowExamPrep(true); setShowNotes(false); }}
+                    className="flex items-center gap-2 text-xs font-bold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 px-4 py-2 rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors"
+                  >
+                    <GraduationCap className="h-4 w-4" />
+                    View Exam Toolkit
+                  </button>
+                )}
+
                 {!notesData && !generatingNotes && (
                   <button 
                     onClick={handleGenerateNotes}
@@ -302,7 +356,7 @@ export default function ReaderPage() {
                 )}
                 {notesData && !showNotes && (
                   <button 
-                    onClick={() => setShowNotes(true)}
+                    onClick={() => { setShowNotes(true); setShowExamPrep(false); }}
                     className="flex items-center gap-2 text-xs font-bold bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 px-4 py-2 rounded-lg hover:bg-rose-200 dark:hover:bg-rose-900/50 transition-colors"
                   >
                     <Sparkles className="h-4 w-4" />
@@ -314,7 +368,6 @@ export default function ReaderPage() {
             
             <div className="flex-1 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-slate-200/80 dark:border-zinc-800/80 rounded-3xl overflow-hidden shadow-elevated flex flex-col relative min-h-[600px]">
               
-              {/* Accessibility Toolbar (Only in Text Mode) */}
               {isTextMode && (
                 <div className="bg-slate-100/50 dark:bg-zinc-950/50 border-b border-slate-200 dark:border-zinc-800 p-3 flex flex-wrap items-center justify-between gap-4">
                   <div className="flex items-center gap-2">
@@ -338,7 +391,6 @@ export default function ReaderPage() {
               )}
 
               <div className="flex-1 flex flex-row overflow-hidden relative">
-                {/* Main Viewer Area */}
                 <div className="flex-1 relative flex flex-col h-full border-r border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#090505] overflow-hidden">
                   {!isTextMode ? (
                     <iframe 
@@ -366,18 +418,112 @@ export default function ReaderPage() {
                   )}
                 </div>
 
-                {/* Side Panel for Notes */}
+                {/* Exam Prep Sidebar */}
+                {showExamPrep && (
+                  <div className="w-full md:w-[450px] lg:w-[500px] bg-white dark:bg-zinc-950 flex flex-col h-full shrink-0 border-l border-slate-200 dark:border-zinc-800 z-20">
+                    <div className="p-4 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between shrink-0 bg-emerald-50/50 dark:bg-emerald-900/10">
+                      <div className="flex items-center gap-2">
+                        <GraduationCap className="h-5 w-5 text-emerald-600 dark:text-emerald-500" />
+                        <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Exam Prep Toolkit</h2>
+                      </div>
+                      <button onClick={() => setShowExamPrep(false)} className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
+                      {generatingExamPrep ? (
+                        <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
+                          <Loader2 className="h-8 w-8 text-emerald-500 animate-spin" />
+                          <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium animate-pulse">{notesStatus}</p>
+                        </div>
+                      ) : examPrepData ? (
+                        <div className="space-y-8">
+                          
+                          {/* High Yield Topics */}
+                          <div>
+                            <h3 className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-3 flex items-center gap-2 border-b border-slate-100 dark:border-zinc-800 pb-2">
+                              <Target className="h-4 w-4" /> High-Yield Topics
+                            </h3>
+                            <div className="space-y-3">
+                              {examPrepData.importantTopics.map((topic, i) => (
+                                <div key={i} className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl p-3">
+                                  <h4 className="text-sm font-bold text-emerald-900 dark:text-emerald-100">{topic.topic}</h4>
+                                  <p className="text-xs text-emerald-700/80 dark:text-emerald-300/80 mt-1">{topic.reason}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Cheat Sheet */}
+                          <div>
+                            <h3 className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-3 flex items-center gap-2 border-b border-slate-100 dark:border-zinc-800 pb-2">
+                              <FileText className="h-4 w-4" /> Formulas & Cheat Sheet
+                            </h3>
+                            <div className="bg-slate-50 dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-800 overflow-hidden">
+                              <table className="w-full text-left text-xs">
+                                <thead>
+                                  <tr className="bg-slate-100 dark:bg-zinc-950 border-b border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400">
+                                    <th className="px-3 py-2 font-bold w-1/3">Term/Formula</th>
+                                    <th className="px-3 py-2 font-bold">Definition</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {examPrepData.formulas.map((item, i) => (
+                                    <tr key={i} className="border-b last:border-0 border-slate-100 dark:border-zinc-800/50">
+                                      <td className="px-3 py-2 font-mono font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-zinc-900/50">{item.term}</td>
+                                      <td className="px-3 py-2 text-slate-600 dark:text-zinc-400 bg-white dark:bg-zinc-900/50">{item.definition}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+
+                          {/* Sample Questions */}
+                          <div>
+                            <h3 className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-2 border-b border-slate-100 dark:border-zinc-800 pb-2">
+                              <Lightbulb className="h-4 w-4" /> Mock Past-Paper Questions
+                            </h3>
+                            <div className="space-y-4">
+                              {examPrepData.sampleQuestions.map((q, i) => (
+                                <div key={i} className="group">
+                                  <div className="flex gap-2">
+                                    <span className="text-amber-500 font-bold text-sm">Q{i+1}.</span>
+                                    <div>
+                                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{q.question}</p>
+                                      <p className="text-[10px] uppercase font-bold text-amber-600/70 dark:text-amber-400/70 mt-1.5 inline-block px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-900/20">
+                                        Cross-link: {q.relatedTopic}
+                                      </p>
+                                      <p className="text-xs text-slate-500 dark:text-zinc-400 mt-2 p-2 rounded-lg bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <strong className="text-amber-600 dark:text-amber-500">Hint:</strong> {q.answerHint}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center h-full">
+                          <p className="text-xs text-slate-500 text-center">No toolkit generated yet.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Notes Sidebar */}
                 {showNotes && (
                   <div className="w-full md:w-[400px] lg:w-[450px] bg-white dark:bg-zinc-950 flex flex-col h-full shrink-0 border-l border-slate-200 dark:border-zinc-800 z-20">
-                    <div className="p-4 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between shrink-0 bg-slate-50 dark:bg-zinc-900/50">
+                    <div className="p-4 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between shrink-0 bg-rose-50/50 dark:bg-rose-900/10">
                       <div className="flex items-center gap-2">
                         <Sparkles className="h-4 w-4 text-rose-500" />
                         <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Detailed Notes</h2>
                       </div>
-                      <button 
-                        onClick={() => setShowNotes(false)}
-                        className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                      >
+                      <button onClick={() => setShowNotes(false)} className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
                         <X className="h-5 w-5" />
                       </button>
                     </div>
@@ -417,6 +563,7 @@ export default function ReaderPage() {
                     </div>
                   </div>
                 )}
+
               </div>
             </div>
           </>
@@ -454,7 +601,6 @@ export default function ReaderPage() {
               </div>
             ) : (
               <div className="space-y-12">
-                {/* Recently Read */}
                 {recentlyRead.length > 0 && (
                   <section>
                     <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
@@ -478,7 +624,6 @@ export default function ReaderPage() {
                   </section>
                 )}
 
-                {/* All Books */}
                 <section>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
