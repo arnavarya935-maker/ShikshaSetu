@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import { 
-  UploadCloud, File, Maximize2, Sparkles, Loader2, X, Library, Clock, Tag, Trash2, 
+  UploadCloud, File as FileIcon, Maximize2, Sparkles, Loader2, X, Library, Clock, Tag, Trash2, 
   ChevronLeft, Volume2, Type, Minus, Plus, Play, Pause, Square, GraduationCap, Target, FileText, Lightbulb,
   Camera, Link as LinkIcon, Layers
 } from 'lucide-react';
@@ -490,7 +490,7 @@ export default function ReaderPage() {
                           <div className="space-y-2 max-h-32 overflow-y-auto p-2 bg-slate-50 dark:bg-zinc-950 rounded-lg border border-slate-200 dark:border-zinc-800">
                             {selectedFiles.map((f, i) => (
                               <div key={i} className="flex items-center gap-2 text-xs text-slate-600 dark:text-zinc-400">
-                                <File className="h-3 w-3 shrink-0" /> <span className="truncate">{f.name}</span>
+                                <FileIcon className="h-3 w-3 shrink-0" /> <span className="truncate">{f.name}</span>
                               </div>
                             ))}
                           </div>
@@ -848,7 +848,7 @@ export default function ReaderPage() {
                   className="flex items-center gap-2 text-sm font-bold bg-white dark:bg-zinc-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-zinc-800 px-5 py-2.5 rounded-xl hover:border-rose-400 transition-colors shadow-sm"
                   title="Upload a single PDF"
                 >
-                  <File className="h-4 w-4" />
+                  <FileIcon className="h-4 w-4" />
                   Upload
                 </button>
                 <button 
@@ -903,7 +903,7 @@ export default function ReaderPage() {
                             {book.fileType === 'text/plain' ? (
                               <Type className="h-8 w-8 text-slate-300 dark:text-zinc-700 group-hover:text-rose-400 transition-colors" />
                             ) : (
-                              <File className="h-8 w-8 text-slate-300 dark:text-zinc-700 group-hover:text-rose-400 transition-colors" />
+                              <FileIcon className="h-8 w-8 text-slate-300 dark:text-zinc-700 group-hover:text-rose-400 transition-colors" />
                             )}
                           </div>
                           <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate">{book.title}</h3>
@@ -961,7 +961,7 @@ export default function ReaderPage() {
                               {book.title}
                             </h3>
                             <p className="text-[10px] text-slate-400 flex items-center gap-1">
-                              {book.fileType === 'text/plain' ? <Camera className="h-3 w-3" /> : <File className="h-3 w-3" />}
+                              {book.fileType === 'text/plain' ? <Camera className="h-3 w-3" /> : <FileIcon className="h-3 w-3" />}
                               Added {new Date(book.addedAt).toLocaleDateString()}
                             </p>
                           </div>
