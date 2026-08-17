@@ -125,8 +125,8 @@ export default function ReaderPage() {
         copiedPages.forEach((page) => mergedPdf.addPage(page));
       }
       const mergedPdfBytes = await mergedPdf.save();
-      const mergedBlob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
-      const mergedFile = new File([mergedBlob], `${uploadTitle}.pdf`, { type: 'application/pdf' });
+      const mergedBlob = new Blob([mergedPdfBytes as any], { type: 'application/pdf' });
+      const mergedFile = new File([mergedBlob as any], `${uploadTitle}.pdf`, { type: 'application/pdf' });
       
       setProcessingStatus('Saving merged document...');
       const newItem = await saveToLibrary(mergedFile, uploadTitle, uploadSubject);
