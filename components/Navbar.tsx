@@ -20,6 +20,7 @@ export default function Navbar() {
   const navItems = [
     { href: '/#features', label: t('nav_features') },
     { href: '/papers', label: 'Past Papers' },
+    { href: '/reader', label: 'Reader' },
     { href: '/about', label: 'About' },
     { href: '/contact', label: 'Contact' },
     { href: '/#faqs', label: t('nav_faqs') },
