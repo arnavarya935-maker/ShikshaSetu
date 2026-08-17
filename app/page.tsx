@@ -64,6 +64,14 @@ export default function HomePage() {
                   {t('nav_login')}
                 </Link>
               </div>
+              <div className="mt-8 rounded-[2rem] overflow-hidden border border-zinc-200/50 dark:border-zinc-800/50 shadow-2xl group relative">
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10" />
+                <img 
+                  src="https://loremflickr.com/800/400/education,technology?lock=1" 
+                  alt="Futuristic Workspace" 
+                  className="w-full h-[300px] object-cover transform group-hover:scale-105 transition-transform duration-700" 
+                />
+              </div>
             </div>
 
             <div className="rounded-[2rem] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 shadow-sm">
@@ -115,6 +123,14 @@ export default function HomePage() {
                 <Link href="/login" className="inline-flex items-center justify-center rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-7 py-3.5 text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 transition hover:border-zinc-400 dark:hover:border-zinc-600">
                   {t('nav_login')}
                 </Link>
+              </div>
+              <div className="mt-8 rounded-[2rem] overflow-hidden border border-zinc-200/50 dark:border-zinc-800/50 shadow-2xl group relative">
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10" />
+                <img 
+                  src="https://loremflickr.com/800/400/education,dashboard?lock=2" 
+                  alt="AI Dashboard Preview" 
+                  className="w-full h-[300px] object-cover transform group-hover:scale-105 transition-transform duration-700" 
+                />
               </div>
             </div>
 
