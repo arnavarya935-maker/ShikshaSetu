@@ -153,6 +153,51 @@ export default function HomePage() {
         </div>
       </AnimatedSection>
 
+      {/* Popular Courses Section */}
+      <AnimatedSection id="courses" className="px-6 py-20 sm:px-10 lg:px-16 border-t border-zinc-200/80 dark:border-zinc-800/80">
+        <div className="mx-auto max-w-7xl">
+          <SectionHeading title="Featured Courses" subtitle="Explore our most popular AI-enhanced learning paths and interactive curriculums." />
+          
+          <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { id: 1, title: 'Advanced Mathematics', category: 'Science', img: 'https://loremflickr.com/800/600/mathematics,education?lock=10' },
+              { id: 2, title: 'Computer Science Fundamentals', category: 'Technology', img: 'https://loremflickr.com/800/600/computer,coding?lock=11' },
+              { id: 3, title: 'Business & Entrepreneurship', category: 'Business', img: 'https://loremflickr.com/800/600/business,students?lock=12' },
+            ].map((course) => (
+              <div key={course.id} className="group rounded-[2rem] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 overflow-hidden hover:shadow-2xl transition-shadow duration-500 cursor-pointer">
+                <div className="relative h-48 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/60 to-transparent z-10" />
+                  <img src={course.img} alt={course.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" />
+                  <div className="absolute bottom-4 left-4 z-20">
+                    <span className="bg-rose-500 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md">
+                      {course.category}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-2 group-hover:text-rose-500 transition-colors">
+                    {course.title}
+                  </h3>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
+                    Master the core concepts with interactive lessons, AI quizzes, and real-world projects.
+                  </p>
+                  <div className="flex items-center justify-between text-xs font-semibold">
+                    <span className="text-zinc-900 dark:text-white">42 Lessons</span>
+                    <span className="text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors">Learn more →</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="mt-12 text-center">
+            <Link href="/dashboard" className="inline-flex items-center justify-center gap-2 rounded-full bg-zinc-900 dark:bg-white px-8 py-3.5 text-xs font-semibold uppercase tracking-wider text-white dark:text-zinc-900 shadow-sm transition hover:bg-black dark:hover:bg-zinc-100 active:scale-[0.98]">
+              View All Courses
+            </Link>
+          </div>
+        </div>
+      </AnimatedSection>
+
       {/* FAQ Section */}
       <AnimatedSection id="faqs" className="border-t border-zinc-200/80 dark:border-zinc-800/80 px-6 py-20 sm:px-10 lg:px-16">
         <div className="mx-auto max-w-4xl">
