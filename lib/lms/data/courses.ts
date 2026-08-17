@@ -7,7 +7,7 @@ export const courses: Course[] = [
     title: 'Introduction to Modern Web Development',
     description: 'Learn the fundamentals of HTML, CSS, JavaScript, and build your very first fully responsive website from scratch.',
     longDescription: 'This comprehensive course is designed for absolute beginners who want to build a solid foundation in web technologies. We start with the basics of semantic HTML, progress to modern CSS layouts including Flexbox and Grid, explore programming concepts with JavaScript, and deploy a responsive personal project to the web.',
-    thumbnail: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+    thumbnail: 'url(https://img.youtube.com/vi/kUMe1FH4CHE/maxresdefault.jpg) center/cover no-repeat',
     category: 'Development',
     tags: ['HTML', 'CSS', 'JavaScript', 'Web Design'],
     instructor: {
@@ -124,7 +124,7 @@ export const courses: Course[] = [
     title: 'Mastering AI & Machine Learning',
     description: 'Dive deep into supervised learning, neural networks, computer vision, and NLP with real-world project portfolios.',
     longDescription: 'Go from the core math behind classification algorithms to deploying deep learning networks using PyTorch. This intermediate course bridges standard python data analysis with deep learning models, training pipelines, fine-tuning, and model evaluations.',
-    thumbnail: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
+    thumbnail: 'url(https://img.youtube.com/vi/tPYj3fFJGjk/maxresdefault.jpg) center/cover no-repeat',
     category: 'Data Science',
     tags: ['Machine Learning', 'Python', 'PyTorch', 'Neural Networks'],
     instructor: {
@@ -190,7 +190,7 @@ export const courses: Course[] = [
     title: 'Advanced Next.js & React Architecture',
     description: 'Master server actions, routing optimization, edge runtimes, caching layers, and high-performance server structures.',
     longDescription: 'Elevate your Next.js knowledge. Dive deep into React Server Components (RSC), partial pre-rendering (PPR), Next.js caching layers, Edge and Serverless runtimes, custom middleware architectures, type-safe API patterns, and database connections.',
-    thumbnail: 'linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)',
+    thumbnail: 'url(https://img.youtube.com/vi/RqdQA36ZNSM/maxresdefault.jpg) center/cover no-repeat',
     category: 'Development',
     tags: ['React', 'Next.js', 'TypeScript', 'Performance'],
     instructor: {
