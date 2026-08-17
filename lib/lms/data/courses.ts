@@ -8,7 +8,7 @@ export const courses: Course[] = [
     description: 'Learn the fundamentals of HTML, CSS, JavaScript, and build your very first fully responsive website from scratch.',
     longDescription: 'This comprehensive course is designed for absolute beginners who want to build a solid foundation in web technologies. We start with the basics of semantic HTML, progress to modern CSS layouts including Flexbox and Grid, explore programming concepts with JavaScript, and deploy a responsive personal project to the web.',
     thumbnail: 'url(https://img.youtube.com/vi/kUMe1FH4CHE/maxresdefault.jpg) center/cover no-repeat',
-    category: 'Development',
+    category: 'Programming',
     tags: ['HTML', 'CSS', 'JavaScript', 'Web Design'],
     instructor: {
       name: 'Dr. Rajesh Sen',
@@ -46,72 +46,6 @@ export const courses: Course[] = [
             duration: 15,
             videoUrl: 'https://www.youtube.com/embed/kUMe1FH4CHE',
             content: 'In this lesson, we explore how the internet works, the role of client-server model, and write our first semantic HTML page.',
-            resources: [
-              { id: 'webdev-res-1-1-1', title: 'Lesson Slides (PDF)', url: '#', type: 'pdf' },
-              { id: 'webdev-res-1-1-2', title: 'MDN Semantic Guide', url: 'https://developer.mozilla.org', type: 'link' }
-            ]
-          },
-          {
-            id: 'webdev-les-1-2',
-            title: 'Styling with CSS Grid and Flexbox',
-            type: 'text',
-            duration: 25,
-            content: 'CSS Flexbox and Grid are layout engines that make aligning web components simple. Flexbox is optimized for one-dimensional layouts, while Grid is suited for two-dimensional grids. Read about CSS selectors, spacing box model, and write layout sheets.',
-            resources: []
-          }
-        ]
-      },
-      {
-        id: 'webdev-mod-2',
-        title: 'Module 2: Logic and Interaction',
-        lessons: [
-          {
-            id: 'webdev-les-2-1',
-            title: 'Adding Interactive Logic with JavaScript',
-            type: 'video',
-            duration: 20,
-            videoUrl: 'https://www.youtube.com/embed/W6NZfCO5SIk',
-            content: 'Learn javascript variables, types, simple loops, event handlers, and modify Document Object Model elements on button click.',
-            resources: []
-          },
-          {
-            id: 'webdev-les-2-2',
-            title: 'Web Dev Basics Quiz',
-            type: 'quiz',
-            duration: 15,
-            quiz: {
-              id: 'webdev-quiz-1',
-              title: 'Module 2 Review Quiz',
-              description: 'Assess your knowledge of core HTML structure, CSS layouts, and basic JavaScript interactions.',
-              passingScore: 70,
-              timeLimitMinutes: 10,
-              questions: [
-                {
-                  id: 'webdev-q-1',
-                  question: 'Which CSS layout model is best for a two-dimensional grid of rows and columns?',
-                  options: [
-                    { id: 'webdev-opt-1-1', text: 'Flexbox' },
-                    { id: 'webdev-opt-1-2', text: 'CSS Grid' },
-                    { id: 'webdev-opt-1-3', text: 'Table Layout' },
-                    { id: 'webdev-opt-1-4', text: 'Position Absolute' }
-                  ],
-                  correctOptionId: 'webdev-opt-1-2',
-                  explanation: 'CSS Grid is designed specifically for two-dimensional grid layouts, offering total control over both rows and columns.'
-                },
-                {
-                  id: 'webdev-q-2',
-                  question: 'What is the correct HTML element for inserting a line break?',
-                  options: [
-                    { id: 'webdev-opt-2-1', text: '<break>' },
-                    { id: 'webdev-opt-2-2', text: '<lb>' },
-                    { id: 'webdev-opt-2-2-br', text: '<br>' },
-                    { id: 'webdev-opt-2-3', text: '<newline>' }
-                  ],
-                  correctOptionId: 'webdev-opt-2-2-br',
-                  explanation: 'The <br> tag is used to produce a line break in a text block.'
-                }
-              ]
-            },
             resources: []
           }
         ]
@@ -130,7 +64,7 @@ export const courses: Course[] = [
     instructor: {
       name: 'Prof. Anjali Sharma',
       avatar: 'AS',
-      bio: 'Research scientist and PhD holder in Applied Artificial Intelligence. Former machine learning engineer at leading technology research labs.',
+      bio: 'Research scientist and PhD holder in Applied Artificial Intelligence.',
       title: 'AI Research Scientist'
     },
     price: 0,
@@ -143,13 +77,10 @@ export const courses: Course[] = [
     createdAt: new Date().toISOString(),
     whatYoullLearn: [
       'Implement linear and logistic regression networks from scratch.',
-      'Train Convolutional Neural Networks (CNNs) for image recognition.',
-      'Build Recurrent Neural Networks and evaluate Transformer models.',
-      'Fine-tune pre-trained models and deploy pipelines to web APIs.'
+      'Train Convolutional Neural Networks (CNNs) for image recognition.'
     ],
     requirements: [
-      'Basic knowledge of Python syntax and programming logic.',
-      'Familiarity with high school mathematics (algebra & simple calculus).'
+      'Basic knowledge of Python syntax and programming logic.'
     ],
     curriculum: [
       {
@@ -164,21 +95,6 @@ export const courses: Course[] = [
             videoUrl: 'https://www.youtube.com/embed/tPYj3fFJGjk',
             content: 'Understand prediction models, cost optimization, gradient descent algorithm, and evaluate dataset classifications.',
             resources: []
-          },
-          {
-            id: 'ai-les-1-2',
-            title: 'Linear Regression Modeling Assignment',
-            type: 'assignment',
-            duration: 45,
-            assignment: {
-              id: 'ai-ass-1-1',
-              title: 'Housing Price Predictor Project',
-              description: 'Implement a multivariate gradient descent modeling script in Python using numpy to predict housing values from a structured housing dataset.',
-              dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-              maxScore: 100,
-              submissions: []
-            },
-            resources: []
           }
         ]
       }
@@ -191,7 +107,7 @@ export const courses: Course[] = [
     description: 'Master server actions, routing optimization, edge runtimes, caching layers, and high-performance server structures.',
     longDescription: 'Elevate your Next.js knowledge. Dive deep into React Server Components (RSC), partial pre-rendering (PPR), Next.js caching layers, Edge and Serverless runtimes, custom middleware architectures, type-safe API patterns, and database connections.',
     thumbnail: 'url(https://img.youtube.com/vi/RqdQA36ZNSM/maxresdefault.jpg) center/cover no-repeat',
-    category: 'Development',
+    category: 'Programming',
     tags: ['React', 'Next.js', 'TypeScript', 'Performance'],
     instructor: {
       name: 'Prateek Bisht',
@@ -208,10 +124,7 @@ export const courses: Course[] = [
     status: 'published',
     createdAt: new Date().toISOString(),
     whatYoullLearn: [
-      'Architect systems utilizing React Server Components (RSC) and layouts.',
-      'Control hydration boundaries and code-splitting patterns.',
-      'Implement granular caching mechanisms using fetch API.',
-      'Build secure, type-safe client-server interfaces using Server Actions.'
+      'Architect systems utilizing React Server Components (RSC) and layouts.'
     ],
     requirements: [
       'Strong proficiency in React, TypeScript, and standard modern web architectures.'
@@ -228,6 +141,246 @@ export const courses: Course[] = [
             duration: 30,
             videoUrl: 'https://www.youtube.com/embed/RqdQA36ZNSM',
             content: 'Understand server-rendering versus client-rendering, static compilation paradigms, and how the RSC payload is parsed by the client.',
+            resources: []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'course-cs-104',
+    slug: 'computer-science-fundamentals',
+    title: 'Computer Science Fundamentals',
+    description: 'Master the core concepts with interactive lessons, algorithms, and real-world data structures.',
+    longDescription: 'This course teaches you how to think like a programmer. We will cover fundamental data structures (arrays, linked lists, trees, graphs) and algorithms (sorting, searching, dynamic programming) essential for computer science and technical interviews.',
+    thumbnail: 'url(https://img.youtube.com/vi/zOjov-2OZ0E/maxresdefault.jpg) center/cover no-repeat',
+    category: 'Programming',
+    tags: ['Algorithms', 'Data Structures', 'CS50', 'Logic'],
+    instructor: {
+      name: 'Dr. Emily Chen',
+      avatar: 'EC',
+      bio: 'Professor of Computer Science with a passion for teaching algorithms and theoretical computation.',
+      title: 'Professor of Computer Science'
+    },
+    price: 499,
+    rating: 4.9,
+    reviewCount: 512,
+    enrolledCount: 3200,
+    duration: 480,
+    level: 'intermediate',
+    status: 'published',
+    createdAt: new Date().toISOString(),
+    whatYoullLearn: [
+      'Understand big-O notation and analyze algorithm efficiency.',
+      'Implement core data structures in Python and C++.'
+    ],
+    requirements: [
+      'Basic programming knowledge.'
+    ],
+    curriculum: [
+      {
+        id: 'cs-mod-1',
+        title: 'Module 1: Algorithms & Data Structures',
+        lessons: [
+          {
+            id: 'cs-les-1-1',
+            title: 'Introduction to Algorithms',
+            type: 'video',
+            duration: 45,
+            videoUrl: 'https://www.youtube.com/embed/zOjov-2OZ0E',
+            content: 'Learn what an algorithm is, how to measure its efficiency using Big-O notation, and start writing simple search algorithms.',
+            resources: []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'course-math-105',
+    slug: 'advanced-mathematics',
+    title: 'Advanced Mathematics',
+    description: 'Deep dive into calculus, linear algebra, and discrete mathematics for science and engineering.',
+    longDescription: 'This comprehensive math course bridges the gap between high school calculus and university-level engineering mathematics. Topics include multivariable calculus, matrix transformations, eigenvalues, and differential equations.',
+    thumbnail: 'url(https://img.youtube.com/vi/yq2v2Tz6Y_c/hqdefault.jpg) center/cover no-repeat',
+    category: 'Mathematics',
+    tags: ['Calculus', 'Algebra', 'Engineering', 'Math'],
+    instructor: {
+      name: 'Prof. David Hilbert',
+      avatar: 'DH',
+      bio: 'Head of Mathematics department with a focus on making complex engineering math accessible.',
+      title: 'Head of Mathematics'
+    },
+    price: 399,
+    rating: 4.7,
+    reviewCount: 156,
+    enrolledCount: 1120,
+    duration: 360,
+    level: 'advanced',
+    status: 'published',
+    createdAt: new Date().toISOString(),
+    whatYoullLearn: [
+      'Solve multivariable calculus problems and differential equations.',
+      'Apply linear algebra concepts to machine learning algorithms.'
+    ],
+    requirements: [
+      'High school calculus and basic algebra.'
+    ],
+    curriculum: [
+      {
+        id: 'math-mod-1',
+        title: 'Module 1: Multivariable Calculus',
+        lessons: [
+          {
+            id: 'math-les-1-1',
+            title: 'Limits and Derivatives in 3D',
+            type: 'video',
+            duration: 35,
+            videoUrl: 'https://www.youtube.com/embed/yq2v2Tz6Y_c',
+            content: 'An introduction to functions of multiple variables, partial derivatives, and gradient vectors.',
+            resources: []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'course-bus-106',
+    slug: 'business-entrepreneurship',
+    title: 'Business & Entrepreneurship',
+    description: 'Learn the fundamentals of starting a company, managing finances, and scaling a startup.',
+    longDescription: 'From ideation to IPO, this course covers the essential frameworks of modern business. Learn how to construct a lean business model, pitch to investors, manage cash flow, and lead a high-performing team in competitive markets.',
+    thumbnail: 'url(https://img.youtube.com/vi/8jWQpb2-m0I/maxresdefault.jpg) center/cover no-repeat',
+    category: 'Business',
+    tags: ['Startup', 'Finance', 'Leadership', 'Management'],
+    instructor: {
+      name: 'Sarah Jenkins',
+      avatar: 'SJ',
+      bio: 'Serial entrepreneur and venture capitalist who has backed over 20 successful startups.',
+      title: 'Venture Capitalist & Founder'
+    },
+    price: 599,
+    rating: 4.8,
+    reviewCount: 410,
+    enrolledCount: 2200,
+    duration: 300,
+    level: 'beginner',
+    status: 'published',
+    createdAt: new Date().toISOString(),
+    whatYoullLearn: [
+      'Develop a lean canvas model for new business ideas.',
+      'Understand venture capital, term sheets, and funding rounds.'
+    ],
+    requirements: [
+      'No prior business knowledge required.'
+    ],
+    curriculum: [
+      {
+        id: 'bus-mod-1',
+        title: 'Module 1: The Startup Foundation',
+        lessons: [
+          {
+            id: 'bus-les-1-1',
+            title: 'Ideation and Market Validation',
+            type: 'video',
+            duration: 40,
+            videoUrl: 'https://www.youtube.com/embed/8jWQpb2-m0I',
+            content: 'How to validate your startup idea using customer feedback loops and the Lean Startup methodology.',
+            resources: []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'course-des-107',
+    slug: 'ui-ux-design-basics',
+    title: 'UI/UX Design Basics',
+    description: 'Master Figma and learn the principles of beautiful, user-centric interface design.',
+    longDescription: 'This course teaches you how to design products that users love. You will learn the fundamentals of typography, color theory, layout grids, and wireframing, all while mastering Figma as your primary design tool.',
+    thumbnail: 'url(https://img.youtube.com/vi/c9Wg6Cb_YlU/maxresdefault.jpg) center/cover no-repeat',
+    category: 'Design',
+    tags: ['Figma', 'UI Design', 'UX Research', 'Creative'],
+    instructor: {
+      name: 'Jessica Lee',
+      avatar: 'JL',
+      bio: 'Lead Product Designer with experience at top tech firms, specializing in accessible and intuitive interfaces.',
+      title: 'Lead Product Designer'
+    },
+    price: 299,
+    rating: 4.95,
+    reviewCount: 300,
+    enrolledCount: 1850,
+    duration: 210,
+    level: 'beginner',
+    status: 'published',
+    createdAt: new Date().toISOString(),
+    whatYoullLearn: [
+      'Design fully interactive prototypes in Figma.',
+      'Conduct user research and usability testing.'
+    ],
+    requirements: [
+      'No design experience required. A free Figma account is needed.'
+    ],
+    curriculum: [
+      {
+        id: 'des-mod-1',
+        title: 'Module 1: Design Fundamentals',
+        lessons: [
+          {
+            id: 'des-les-1-1',
+            title: 'Introduction to Figma & UI Basics',
+            type: 'video',
+            duration: 30,
+            videoUrl: 'https://www.youtube.com/embed/c9Wg6Cb_YlU',
+            content: 'Get comfortable with the Figma interface and learn the basics of framing, constraints, and auto-layout.',
+            resources: []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'course-lang-108',
+    slug: 'spanish-for-beginners',
+    title: 'Spanish for Beginners',
+    description: 'Learn conversational Spanish quickly with interactive dialogue and pronunciation exercises.',
+    longDescription: 'Whether you are traveling to Spain or Latin America, this course will teach you the essential vocabulary, grammar, and conversational phrases to confidently speak with locals and navigate daily life.',
+    thumbnail: 'url(https://img.youtube.com/vi/8z9Z_4P0Q2Q/maxresdefault.jpg) center/cover no-repeat',
+    category: 'Language',
+    tags: ['Spanish', 'Language', 'Travel', 'Communication'],
+    instructor: {
+      name: 'Carlos Ruiz',
+      avatar: 'CR',
+      bio: 'Native Spanish speaker and certified language instructor with a focus on immersive learning.',
+      title: 'Language Instructor'
+    },
+    price: 199,
+    rating: 4.6,
+    reviewCount: 89,
+    enrolledCount: 450,
+    duration: 150,
+    level: 'beginner',
+    status: 'published',
+    createdAt: new Date().toISOString(),
+    whatYoullLearn: [
+      'Hold a basic conversation in Spanish.',
+      'Conjugate essential verbs in the present and past tense.'
+    ],
+    requirements: [
+      'A willingness to practice speaking out loud.'
+    ],
+    curriculum: [
+      {
+        id: 'lang-mod-1',
+        title: 'Module 1: Greetings & Basics',
+        lessons: [
+          {
+            id: 'lang-les-1-1',
+            title: 'Basic Greetings and Introductions',
+            type: 'video',
+            duration: 20,
+            videoUrl: 'https://www.youtube.com/embed/8z9Z_4P0Q2Q',
+            content: 'Learn how to say hello, ask how someone is doing, and introduce yourself in Spanish.',
             resources: []
           }
         ]
