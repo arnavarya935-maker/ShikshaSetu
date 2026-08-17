@@ -98,8 +98,7 @@ export default function ReaderPage() {
     setNotesStatus('Extracting text from PDF...');
     
     try {
-      const fileToExtract = new File([activeBook.blob], activeBook.title + '.pdf', { type: 'application/pdf' });
-      const text = await extractTextFromPdf(fileToExtract, setNotesStatus);
+      const text = await extractTextFromPdf(activeBook.blob, setNotesStatus);
       if (text.length < 20) {
         throw new Error('Not enough text extracted from the PDF.');
       }

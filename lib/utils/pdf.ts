@@ -22,7 +22,7 @@ export const loadPdfJs = (): Promise<any> => {
   });
 };
 
-export const extractTextFromPdf = async (file: File, onProgress?: (msg: string) => void): Promise<string> => {
+export const extractTextFromPdf = async (file: Blob, onProgress?: (msg: string) => void): Promise<string> => {
   try {
     const pdfjs = await loadPdfJs();
     const arrayBuffer = await file.arrayBuffer();
