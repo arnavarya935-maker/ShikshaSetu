@@ -1,45 +1,105 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
-import { UploadCloud, File, AlertCircle, Maximize2, Sparkles, Loader2, X } from 'lucide-react';
+import { UploadCloud, File, AlertCircle, Maximize2, Sparkles, Loader2, X, Library, Clock, Tag, Trash2, ChevronLeft } from 'lucide-react';
 import { extractTextFromPdf } from '../../lib/utils/pdf';
 import { generateNotesAndSummary, AiSummaryResponse } from '../../lib/ai/client';
+import { LibraryItem, saveToLibrary, getLibrary, updateLastRead, removeFromLibrary } from '../../lib/storage/library';
 
 export default function ReaderPage() {
+  const [library, setLibrary] = useState<LibraryItem[]>([]);
+  const [activeBook, setActiveBook] = useState<LibraryItem | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  
+  // Upload State
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadTitle, setUploadTitle] = useState('');
+  const [uploadSubject, setUploadSubject] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Notes State
   const [generatingNotes, setGeneratingNotes] = useState(false);
   const [notesStatus, setNotesStatus] = useState('');
   const [notesData, setNotesData] = useState<AiSummaryResponse | null>(null);
   const [showNotes, setShowNotes] = useState(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Filters
+  const [selectedSubject, setSelectedSubject] = useState<string>('All');
+
+  useEffect(() => {
+    loadLibrary();
+  }, []);
+
+  const loadLibrary = async () => {
+    const items = await getLibrary();
+    setLibrary(items);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type === 'application/pdf') {
-      const url = URL.createObjectURL(file);
-      setPdfUrl(url);
-      setFileName(file.name);
-      setPdfFile(file);
-      setNotesData(null);
-      setShowNotes(false);
+      setUploadFile(file);
+      setUploadTitle(file.name.replace('.pdf', ''));
+      setIsUploading(true);
     }
   };
 
-  const triggerUpload = () => fileInputRef.current?.click();
+  const confirmUpload = async () => {
+    if (!uploadFile) return;
+    const newItem = await saveToLibrary(uploadFile, uploadTitle, uploadSubject);
+    await loadLibrary();
+    setIsUploading(false);
+    setUploadFile(null);
+    setUploadTitle('');
+    setUploadSubject('');
+    openBook(newItem);
+  };
+
+  const cancelUpload = () => {
+    setIsUploading(false);
+    setUploadFile(null);
+    setUploadTitle('');
+    setUploadSubject('');
+  };
+
+  const openBook = async (book: LibraryItem) => {
+    await updateLastRead(book.id);
+    const url = URL.createObjectURL(book.blob);
+    setPdfUrl(url);
+    setActiveBook(book);
+    setNotesData(null);
+    setShowNotes(false);
+    await loadLibrary(); // Refresh last read order
+  };
+
+  const closeBook = () => {
+    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    setPdfUrl(null);
+    setActiveBook(null);
+    setNotesData(null);
+    setShowNotes(false);
+  };
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (confirm('Are you sure you want to delete this book?')) {
+      await removeFromLibrary(id);
+      await loadLibrary();
+    }
+  };
 
   const handleGenerateNotes = async () => {
-    if (!pdfFile) return;
+    if (!activeBook) return;
     setGeneratingNotes(true);
     setShowNotes(true);
     setNotesStatus('Extracting text from PDF...');
     
     try {
-      const text = await extractTextFromPdf(pdfFile, setNotesStatus);
+      const fileToExtract = new File([activeBook.blob], activeBook.title + '.pdf', { type: 'application/pdf' });
+      const text = await extractTextFromPdf(fileToExtract, setNotesStatus);
       if (text.length < 20) {
         throw new Error('Not enough text extracted from the PDF.');
       }
@@ -56,87 +116,106 @@ export default function ReaderPage() {
     }
   };
 
+  // Derived data
+  const recentlyRead = [...library].sort((a, b) => b.lastRead - a.lastRead).slice(0, 4);
+  const subjects = ['All', ...Array.from(new Set(library.map(b => b.subject)))].filter(Boolean);
+  const filteredLibrary = selectedSubject === 'All' 
+    ? library 
+    : library.filter(b => b.subject === selectedSubject);
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#090505] text-slate-900 dark:text-zinc-50 relative overflow-hidden">
       <div className="absolute top-1/4 left-1/4 w-full max-w-2xl h-[300px] bg-rose-500/10 dark:bg-rose-500/5 blur-[120px] rounded-full pointer-events-none" />
       
       <Navbar />
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-10 mt-16 flex flex-col relative z-10">
-        <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-rose-600 dark:text-rose-500">
-              E-Book & PDF Reader
-            </h1>
-            <p className="text-sm text-slate-600 dark:text-zinc-400 mt-1">
-              Read your study materials in a clean, distraction-free interface.
-            </p>
-          </div>
-          {pdfUrl && (
-            <div className="flex flex-wrap gap-2">
-              {!notesData && !generatingNotes && (
-                <button 
-                  onClick={handleGenerateNotes}
-                  className="flex items-center gap-2 text-xs font-bold bg-rose-600 text-white border border-rose-600 px-4 py-2 rounded-lg hover:bg-rose-700 transition-colors"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Generate Detailed Notes
-                </button>
-              )}
-              {notesData && !showNotes && (
-                <button 
-                  onClick={() => setShowNotes(true)}
-                  className="flex items-center gap-2 text-xs font-bold bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 px-4 py-2 rounded-lg hover:bg-rose-200 dark:hover:bg-rose-900/50 transition-colors"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  View Notes
-                </button>
-              )}
-              <button 
-                onClick={triggerUpload}
-                disabled={generatingNotes}
-                className="flex items-center gap-2 text-xs font-bold bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 px-4 py-2 rounded-lg hover:border-rose-500 transition-colors disabled:opacity-50"
-              >
-                Open New File
-              </button>
-            </div>
-          )}
-        </header>
-
-        <div className="flex-1 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-slate-200/80 dark:border-zinc-800/80 rounded-3xl overflow-hidden shadow-elevated flex relative min-h-[600px]">
-          <input 
-            type="file" 
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            accept="application/pdf"
-            className="hidden"
-          />
-
-          {!pdfUrl ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-10 text-center border-2 border-dashed border-slate-200 dark:border-zinc-800 m-8 rounded-2xl hover:border-rose-400 dark:hover:border-rose-500 transition-colors cursor-pointer" onClick={triggerUpload}>
-              <UploadCloud className="h-12 w-12 text-slate-400 mb-4" />
-              <h2 className="text-lg font-bold text-slate-700 dark:text-slate-200 mb-2">Upload a PDF to start reading</h2>
-              <p className="text-xs text-slate-500 max-w-sm">
-                Drag and drop your e-books, lecture slides, or past papers here. 
-                They stay on your device for privacy.
-              </p>
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden">
-              {/* PDF Viewer */}
-              <div className="flex-1 relative flex flex-col h-full border-r border-slate-200 dark:border-zinc-800">
-                <div className="bg-slate-100 dark:bg-zinc-950 p-2 flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 shrink-0">
-                  <div className="flex items-center gap-2 px-2">
-                    <File className="h-4 w-4 text-rose-500" />
-                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate max-w-[200px] sm:max-w-md">{fileName}</span>
-                  </div>
-                  <button 
-                    onClick={() => window.open(pdfUrl, '_blank')}
-                    className="p-1.5 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded-md transition-colors text-slate-500"
-                    title="Fullscreen"
-                  >
-                    <Maximize2 className="h-4 w-4" />
-                  </button>
+        
+        {/* Upload Modal */}
+        {isUploading && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 w-full max-w-md shadow-2xl border border-slate-200 dark:border-zinc-800">
+              <h3 className="text-lg font-bold mb-4 text-slate-900 dark:text-white">Add to Library</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Title</label>
+                  <input 
+                    type="text" 
+                    value={uploadTitle}
+                    onChange={(e) => setUploadTitle(e.target.value)}
+                    className="w-full bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm outline-none focus:border-rose-500 transition-colors"
+                  />
                 </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Subject / Tag (Optional)</label>
+                  <input 
+                    type="text" 
+                    value={uploadSubject}
+                    onChange={(e) => setUploadSubject(e.target.value)}
+                    placeholder="e.g. Physics, Math, History..."
+                    className="w-full bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm outline-none focus:border-rose-500 transition-colors"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6 justify-end">
+                <button onClick={cancelUpload} className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Cancel</button>
+                <button onClick={confirmUpload} className="px-4 py-2 text-sm font-semibold bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors shadow-sm">Save & Open</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <input 
+          type="file" 
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+          accept="application/pdf"
+          className="hidden"
+        />
+
+        {/* READER VIEW */}
+        {activeBook && pdfUrl ? (
+          <>
+            <header className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={closeBook}
+                  className="p-2 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded-full transition-colors text-slate-600 dark:text-zinc-400"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white truncate max-w-sm">
+                    {activeBook.title}
+                  </h1>
+                  <p className="text-xs text-rose-600 dark:text-rose-400 mt-1 font-semibold bg-rose-50 dark:bg-rose-500/10 inline-block px-2 py-0.5 rounded-md">
+                    {activeBook.subject}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {!notesData && !generatingNotes && (
+                  <button 
+                    onClick={handleGenerateNotes}
+                    className="flex items-center gap-2 text-xs font-bold bg-rose-600 text-white border border-rose-600 px-4 py-2 rounded-lg hover:bg-rose-700 transition-colors"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Generate Detailed Notes
+                  </button>
+                )}
+                {notesData && !showNotes && (
+                  <button 
+                    onClick={() => setShowNotes(true)}
+                    className="flex items-center gap-2 text-xs font-bold bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 px-4 py-2 rounded-lg hover:bg-rose-200 dark:hover:bg-rose-900/50 transition-colors"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    View Notes
+                  </button>
+                )}
+              </div>
+            </header>
+            
+            <div className="flex-1 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-slate-200/80 dark:border-zinc-800/80 rounded-3xl overflow-hidden shadow-elevated flex relative min-h-[600px]">
+              <div className="flex-1 relative flex flex-col h-full border-r border-slate-200 dark:border-zinc-800">
                 <iframe 
                   src={`${pdfUrl}#toolbar=0&navpanes=0`} 
                   className="w-full h-full flex-1"
@@ -196,8 +275,135 @@ export default function ReaderPage() {
                 </div>
               )}
             </div>
-          )}
-        </div>
+          </>
+        ) : (
+          /* LIBRARY VIEW */
+          <>
+            <header className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
+                  <Library className="h-8 w-8 text-rose-500" />
+                  My Library
+                </h1>
+                <p className="text-sm text-slate-600 dark:text-zinc-400 mt-2">
+                  All your files stay on your device for privacy.
+                </p>
+              </div>
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-2 text-sm font-bold bg-rose-600 text-white px-5 py-2.5 rounded-xl hover:bg-rose-700 transition-colors shadow-sm shadow-rose-500/20"
+              >
+                <UploadCloud className="h-4 w-4" />
+                Upload New
+              </button>
+            </header>
+
+            {library.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-slate-200 dark:border-zinc-800 rounded-3xl hover:border-rose-400 dark:hover:border-rose-500 transition-colors cursor-pointer bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm" onClick={() => fileInputRef.current?.click()}>
+                <div className="w-16 h-16 bg-rose-100 dark:bg-rose-500/10 rounded-full flex items-center justify-center mb-4">
+                  <UploadCloud className="h-8 w-8 text-rose-500" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-700 dark:text-slate-200 mb-2">Your library is empty</h2>
+                <p className="text-sm text-slate-500 max-w-sm">
+                  Upload PDFs to start building your personal, privacy-first library. Everything stays on your device.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-12">
+                {/* Recently Read */}
+                {recentlyRead.length > 0 && (
+                  <section>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-rose-500" /> Recently Read
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                      {recentlyRead.map(book => (
+                        <div 
+                          key={`recent-${book.id}`}
+                          onClick={() => openBook(book)}
+                          className="bg-white/70 dark:bg-zinc-900/70 border border-slate-200 dark:border-zinc-800 p-4 rounded-2xl cursor-pointer hover:border-rose-400 hover:shadow-lg transition-all group"
+                        >
+                          <div className="h-32 bg-slate-100 dark:bg-zinc-950 rounded-xl mb-3 flex items-center justify-center group-hover:bg-rose-50 dark:group-hover:bg-rose-500/5 transition-colors">
+                            <File className="h-8 w-8 text-slate-300 dark:text-zinc-700 group-hover:text-rose-400 transition-colors" />
+                          </div>
+                          <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate">{book.title}</h3>
+                          <p className="text-xs text-slate-500 mt-1 truncate">{book.subject}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* All Books */}
+                <section>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Library className="h-5 w-5 text-rose-500" /> All Books
+                    </h2>
+                    
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
+                      {subjects.map(subject => (
+                        <button
+                          key={subject}
+                          onClick={() => setSelectedSubject(subject)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+                            selectedSubject === subject 
+                            ? 'bg-rose-600 text-white' 
+                            : 'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:border-rose-400'
+                          }`}
+                        >
+                          {subject}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {filteredLibrary.length === 0 ? (
+                    <div className="text-center py-10 text-slate-500 text-sm">
+                      No books found for this subject.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {filteredLibrary.map(book => (
+                        <div 
+                          key={book.id}
+                          className="bg-white/70 dark:bg-zinc-900/70 border border-slate-200 dark:border-zinc-800 p-4 rounded-2xl cursor-pointer hover:border-rose-400 hover:shadow-lg transition-all group flex flex-col"
+                        >
+                          <div 
+                            className="flex-1"
+                            onClick={() => openBook(book)}
+                          >
+                            <div className="flex items-start justify-between mb-3">
+                              <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 px-2 py-1 rounded-md flex items-center gap-1">
+                                <Tag className="h-3 w-3" /> {book.subject}
+                              </span>
+                            </div>
+                            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 line-clamp-2 leading-tight mb-2 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
+                              {book.title}
+                            </h3>
+                            <p className="text-[10px] text-slate-400">
+                              Added {new Date(book.addedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          
+                          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-zinc-800/50 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button 
+                              onClick={(e) => handleDelete(e, book.id)}
+                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-md transition-colors"
+                              title="Remove from library"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </div>
+            )}
+          </>
+        )}
       </main>
       <Footer />
     </div>
