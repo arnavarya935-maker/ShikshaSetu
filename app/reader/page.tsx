@@ -3,7 +3,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
-import { UploadCloud, File, AlertCircle, Maximize2, Sparkles, Loader2, X, Library, Clock, Tag, Trash2, ChevronLeft } from 'lucide-react';
+import { 
+  UploadCloud, File, Maximize2, Sparkles, Loader2, X, Library, Clock, Tag, Trash2, 
+  ChevronLeft, Volume2, Type, Minus, Plus, Play, Pause, Square
+} from 'lucide-react';
 import { extractTextFromPdf } from '../../lib/utils/pdf';
 import { generateNotesAndSummary, AiSummaryResponse } from '../../lib/ai/client';
 import { LibraryItem, saveToLibrary, getLibrary, updateLastRead, removeFromLibrary } from '../../lib/storage/library';
@@ -26,11 +29,24 @@ export default function ReaderPage() {
   const [notesData, setNotesData] = useState<AiSummaryResponse | null>(null);
   const [showNotes, setShowNotes] = useState(false);
 
+  // Accessibility & Multi-format State
+  const [isTextMode, setIsTextMode] = useState(false);
+  const [extractedText, setExtractedText] = useState<string | null>(null);
+  const [isExtractingText, setIsExtractingText] = useState(false);
+  const [fontSize, setFontSize] = useState(16);
+  
+  // TTS State
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [speechSynthesis, setSpeechSynthesis] = useState<SpeechSynthesis | null>(null);
+
   // Filters
   const [selectedSubject, setSelectedSubject] = useState<string>('All');
 
   useEffect(() => {
     loadLibrary();
+    if (typeof window !== 'undefined') {
+      setSpeechSynthesis(window.speechSynthesis);
+    }
   }, []);
 
   const loadLibrary = async () => {
@@ -40,10 +56,13 @@ export default function ReaderPage() {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.type === 'application/pdf') {
+    // Support PDF, docx, epub based on plan
+    if (file && (file.type === 'application/pdf' || file.name.endsWith('.pdf'))) {
       setUploadFile(file);
-      setUploadTitle(file.name.replace('.pdf', ''));
+      setUploadTitle(file.name.replace(/\.[^/.]+$/, ""));
       setIsUploading(true);
+    } else {
+      alert('Currently only PDF files are fully supported in this beta version.');
     }
   };
 
@@ -72,7 +91,10 @@ export default function ReaderPage() {
     setActiveBook(book);
     setNotesData(null);
     setShowNotes(false);
-    await loadLibrary(); // Refresh last read order
+    setIsTextMode(false);
+    setExtractedText(null);
+    stopSpeech();
+    await loadLibrary();
   };
 
   const closeBook = () => {
@@ -81,6 +103,9 @@ export default function ReaderPage() {
     setActiveBook(null);
     setNotesData(null);
     setShowNotes(false);
+    setIsTextMode(false);
+    setExtractedText(null);
+    stopSpeech();
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
@@ -91,6 +116,62 @@ export default function ReaderPage() {
     }
   };
 
+  const toggleTextMode = async () => {
+    if (isTextMode) {
+      setIsTextMode(false);
+      stopSpeech();
+      return;
+    }
+    
+    if (extractedText) {
+      setIsTextMode(true);
+      return;
+    }
+
+    if (!activeBook) return;
+    
+    setIsExtractingText(true);
+    setIsTextMode(true); // Switch early to show loading state
+    try {
+      const text = await extractTextFromPdf(activeBook.blob);
+      setExtractedText(text);
+    } catch (error) {
+      console.error(error);
+      alert('Failed to extract text for accessible reading.');
+      setIsTextMode(false);
+    } finally {
+      setIsExtractingText(false);
+    }
+  };
+
+  // --- TTS ---
+  const playSpeech = () => {
+    if (!speechSynthesis || !extractedText) return;
+    
+    if (speechSynthesis.paused) {
+      speechSynthesis.resume();
+      setIsPlaying(true);
+    } else {
+      stopSpeech(); // Reset if already playing something else
+      const utterance = new SpeechSynthesisUtterance(extractedText);
+      utterance.onend = () => setIsPlaying(false);
+      speechSynthesis.speak(utterance);
+      setIsPlaying(true);
+    }
+  };
+
+  const pauseSpeech = () => {
+    if (!speechSynthesis) return;
+    speechSynthesis.pause();
+    setIsPlaying(false);
+  };
+
+  const stopSpeech = () => {
+    if (!speechSynthesis) return;
+    speechSynthesis.cancel();
+    setIsPlaying(false);
+  };
+
   const handleGenerateNotes = async () => {
     if (!activeBook) return;
     setGeneratingNotes(true);
@@ -98,7 +179,12 @@ export default function ReaderPage() {
     setNotesStatus('Extracting text from PDF...');
     
     try {
-      const text = await extractTextFromPdf(activeBook.blob, setNotesStatus);
+      let text = extractedText;
+      if (!text) {
+        text = await extractTextFromPdf(activeBook.blob, setNotesStatus);
+        setExtractedText(text); // Cache it
+      }
+      
       if (text.length < 20) {
         throw new Error('Not enough text extracted from the PDF.');
       }
@@ -167,7 +253,7 @@ export default function ReaderPage() {
           type="file" 
           ref={fileInputRef}
           onChange={handleFileSelect}
-          accept="application/pdf"
+          accept="application/pdf,application/epub+zip,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           className="hidden"
         />
 
@@ -191,14 +277,27 @@ export default function ReaderPage() {
                   </p>
                 </div>
               </div>
+              
               <div className="flex flex-wrap gap-2">
+                <button 
+                  onClick={toggleTextMode}
+                  className={`flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-lg transition-colors border ${
+                    isTextMode 
+                      ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800' 
+                      : 'bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 border-slate-200 dark:border-zinc-800 hover:border-indigo-500 hover:text-indigo-600'
+                  }`}
+                >
+                  <Type className="h-4 w-4" />
+                  {isTextMode ? 'Exit Text Mode' : 'Accessible Text Mode'}
+                </button>
+
                 {!notesData && !generatingNotes && (
                   <button 
                     onClick={handleGenerateNotes}
                     className="flex items-center gap-2 text-xs font-bold bg-rose-600 text-white border border-rose-600 px-4 py-2 rounded-lg hover:bg-rose-700 transition-colors"
                   >
                     <Sparkles className="h-4 w-4" />
-                    Generate Detailed Notes
+                    Generate Notes
                   </button>
                 )}
                 {notesData && !showNotes && (
@@ -213,66 +312,111 @@ export default function ReaderPage() {
               </div>
             </header>
             
-            <div className="flex-1 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-slate-200/80 dark:border-zinc-800/80 rounded-3xl overflow-hidden shadow-elevated flex relative min-h-[600px]">
-              <div className="flex-1 relative flex flex-col h-full border-r border-slate-200 dark:border-zinc-800">
-                <iframe 
-                  src={`${pdfUrl}#toolbar=0&navpanes=0`} 
-                  className="w-full h-full flex-1"
-                  title="PDF Reader"
-                />
-              </div>
-
-              {/* Side Panel for Notes */}
-              {showNotes && (
-                <div className="w-full md:w-[400px] lg:w-[450px] bg-white dark:bg-zinc-950 flex flex-col h-full shrink-0 border-l border-slate-200 dark:border-zinc-800 z-20">
-                  <div className="p-4 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between shrink-0 bg-slate-50 dark:bg-zinc-900/50">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-rose-500" />
-                      <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Detailed Notes</h2>
-                    </div>
-                    <button 
-                      onClick={() => setShowNotes(false)}
-                      className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
+            <div className="flex-1 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-slate-200/80 dark:border-zinc-800/80 rounded-3xl overflow-hidden shadow-elevated flex flex-col relative min-h-[600px]">
+              
+              {/* Accessibility Toolbar (Only in Text Mode) */}
+              {isTextMode && (
+                <div className="bg-slate-100/50 dark:bg-zinc-950/50 border-b border-slate-200 dark:border-zinc-800 p-3 flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mr-2">Font Size</span>
+                    <button onClick={() => setFontSize(f => Math.max(12, f - 2))} className="p-1.5 bg-white dark:bg-zinc-900 rounded border border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800"><Minus className="h-4 w-4" /></button>
+                    <span className="text-sm font-semibold w-8 text-center">{fontSize}px</span>
+                    <button onClick={() => setFontSize(f => Math.min(48, f + 2))} className="p-1.5 bg-white dark:bg-zinc-900 rounded border border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800"><Plus className="h-4 w-4" /></button>
                   </div>
-                  
-                  <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
-                    {generatingNotes ? (
-                      <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
-                        <Loader2 className="h-8 w-8 text-rose-500 animate-spin" />
-                        <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium animate-pulse">{notesStatus}</p>
-                      </div>
-                    ) : notesData ? (
-                      <div className="space-y-6">
-                        <div>
-                          <h3 className="text-xs font-mono font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-2 text-rose-600 dark:text-rose-400">Abstract Summary</h3>
-                          <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-zinc-900 p-4 rounded-xl border border-slate-100 dark:border-zinc-800">
-                            {notesData.summary}
-                          </p>
-                        </div>
-                        
-                        <div>
-                          <h3 className="text-xs font-mono font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-2 text-rose-600 dark:text-rose-400">Key Takeaways</h3>
-                          <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
-                            {notesData.takeaways.map((item, idx) => (
-                              <li key={idx} className="flex items-start gap-2">
-                                <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-slate-400 dark:bg-slate-500" />
-                                <span className="leading-relaxed">{item}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mr-2 flex items-center gap-1">
+                      <Volume2 className="h-4 w-4" /> Read Aloud
+                    </span>
+                    {!isPlaying ? (
+                      <button onClick={playSpeech} className="p-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded border border-indigo-200 dark:border-indigo-800/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50"><Play className="h-4 w-4" /></button>
                     ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <p className="text-xs text-slate-500 text-center">No notes generated yet.</p>
-                      </div>
+                      <button onClick={pauseSpeech} className="p-1.5 bg-amber-50 text-amber-600 rounded border border-amber-200 hover:bg-amber-100"><Pause className="h-4 w-4" /></button>
                     )}
+                    <button onClick={stopSpeech} className="p-1.5 bg-red-50 text-red-600 rounded border border-red-200 hover:bg-red-100"><Square className="h-4 w-4" /></button>
                   </div>
                 </div>
               )}
+
+              <div className="flex-1 flex flex-row overflow-hidden relative">
+                {/* Main Viewer Area */}
+                <div className="flex-1 relative flex flex-col h-full border-r border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#090505] overflow-hidden">
+                  {!isTextMode ? (
+                    <iframe 
+                      src={`${pdfUrl}#toolbar=0&navpanes=0`} 
+                      className="w-full h-full flex-1"
+                      title="PDF Reader"
+                    />
+                  ) : (
+                    <div className="h-full overflow-y-auto p-8 md:p-12 scrollbar-thin">
+                      {isExtractingText ? (
+                        <div className="h-full flex flex-col items-center justify-center text-slate-500">
+                          <Loader2 className="h-10 w-10 animate-spin text-indigo-500 mb-4" />
+                          <p>Extracting text for accessibility mode...</p>
+                        </div>
+                      ) : (
+                        <div 
+                          className="max-w-3xl mx-auto text-slate-800 dark:text-slate-200 leading-relaxed font-serif whitespace-pre-wrap"
+                          style={{ fontSize: `${fontSize}px` }}
+                        >
+                          {extractedText}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Side Panel for Notes */}
+                {showNotes && (
+                  <div className="w-full md:w-[400px] lg:w-[450px] bg-white dark:bg-zinc-950 flex flex-col h-full shrink-0 border-l border-slate-200 dark:border-zinc-800 z-20">
+                    <div className="p-4 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between shrink-0 bg-slate-50 dark:bg-zinc-900/50">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-rose-500" />
+                        <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Detailed Notes</h2>
+                      </div>
+                      <button 
+                        onClick={() => setShowNotes(false)}
+                        className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
+                      {generatingNotes ? (
+                        <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
+                          <Loader2 className="h-8 w-8 text-rose-500 animate-spin" />
+                          <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium animate-pulse">{notesStatus}</p>
+                        </div>
+                      ) : notesData ? (
+                        <div className="space-y-6">
+                          <div>
+                            <h3 className="text-xs font-mono font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-2 text-rose-600 dark:text-rose-400">Abstract Summary</h3>
+                            <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-zinc-900 p-4 rounded-xl border border-slate-100 dark:border-zinc-800">
+                              {notesData.summary}
+                            </p>
+                          </div>
+                          
+                          <div>
+                            <h3 className="text-xs font-mono font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-2 text-rose-600 dark:text-rose-400">Key Takeaways</h3>
+                            <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
+                              {notesData.takeaways.map((item, idx) => (
+                                <li key={idx} className="flex items-start gap-2">
+                                  <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-slate-400 dark:bg-slate-500" />
+                                  <span className="leading-relaxed">{item}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center h-full">
+                          <p className="text-xs text-slate-500 text-center">No notes generated yet.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </>
         ) : (

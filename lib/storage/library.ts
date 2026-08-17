@@ -7,6 +7,7 @@ export interface LibraryItem {
   addedAt: number;
   lastRead: number;
   subject: string;
+  fileType?: string;
 }
 
 const libraryStore = localforage.createInstance({
@@ -29,6 +30,7 @@ export const saveToLibrary = async (
     addedAt: now,
     lastRead: now,
     subject: subject || 'Uncategorized',
+    fileType: file.type,
   };
 
   await libraryStore.setItem(id, item);
