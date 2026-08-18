@@ -17,7 +17,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { signIn, signUp, signInWithGoogle, resetPassword, isConfigured } = useAuth();
+  const { signIn, signInWithMagicLink, signInWithGoogle, resetPassword, isConfigured } = useAuth();
   const { t } = useLanguage();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
