@@ -47,7 +47,7 @@ Select a query below or type your question:`,
     try {
       const history = messages.slice(1);
       const reply = await askAiTutor(text, history);
-      setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
+      setMessages((prev) => [...prev, { role: 'assistant', content: reply || 'Unable to generate response. Please try again.' }]);
     } catch (err) {
       console.error(err);
       setMessages((prev) => [

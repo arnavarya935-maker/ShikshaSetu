@@ -279,7 +279,14 @@ async function callGemini(url: string, prompt: string): Promise<string> {
     throw new Error(`Gemini API query failed (${res.status}): ${res.statusText}`);
   }
   const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+  const candidate = data.candidates?.[0];
+  if (!candidate) return 'No response generated.';
+  
+  if (candidate.finishReason && candidate.finishReason !== 'STOP') {
+    return `*[AI Response Blocked: ${candidate.finishReason}]* ${candidate.finishMessage || ''}`.trim();
+  }
+  
+  return candidate.content?.parts?.[0]?.text ?? 'No response generated.';
 }
 
 function cleanAndParseJson(text: string) {
